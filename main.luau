@@ -19,6 +19,7 @@ local ZOOM_MIN        = 2        			-- closest the camera can get
 local ZOOM_MAX        = 50       			-- furthest the camera can get
 local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
 local FLAT_LIGHTING   = true     			-- set false to keep your scene lighting as is
+local BLOOM_INTENSITY = 0					-- set to nil to leave bloom as is
 
 local player = Players.LocalPlayer
 for _, gui in ipairs(player.PlayerGui:GetChildren()) do
@@ -107,6 +108,11 @@ if FLAT_LIGHTING then
 	Lighting.FogEnd = 100000
 	Lighting.EnvironmentDiffuseScale = 0
 	Lighting.EnvironmentSpecularScale = 0
+end
+
+if BLOOM_INTENSITY ~= nil then
+	local bloom = Lighting:FindFirstChildOfClass("BloomEffect") or Instance.new("BloomEffect", Lighting)
+	bloom.Intensity = BLOOM_INTENSITY
 end
 
 local backdrop = Instance.new("Part", workspace)
