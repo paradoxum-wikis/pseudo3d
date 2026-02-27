@@ -60,6 +60,8 @@ const htmlUI = `
 		button { padding: 0.625em 1.25em; font-size: 1em; cursor: pointer; background: oklch(50% 0 130); color: oklch(100% 0 0); border: none; border-radius: 0.25em; }
 		button:hover { background: oklch(45% 0 130); }
 		#status { margin-top: 0.625em; color: oklch(60% 5 120); }
+		#frameSlider { width:60%; margin-top:0.75em; }
+		#frameLabel { margin-left:0.5em; font-size:0.9em; color: oklch(60% 0 0); }
 	</style>
 </head>
 <body>
@@ -67,12 +69,16 @@ const htmlUI = `
 	<p>Click and drag to define the crop area. This will be used for all frames.</p>
 
 	<div id="wrapper">
-		<img id="refImage" src="/image" draggable="false">
+		<img id="refImage" src="/image/0" draggable="false">
 		<div id="selection"></div>
+	</div>
+	<div class="controls">
+		<input type="range" id="frameSlider" min="0" value="0">
+		<span id="frameLabel">Frame 1</span>
 	</div>
 
 	<div class="controls">
-		<button id="saveBtn">Save & Process</button>
+		<button id="saveBtn">Save & Process!</button>
 		<div id="status">No selection</div>
 	</div>
 
@@ -140,6 +146,19 @@ const htmlUI = `
 			}
 		});
 
+		const slider = document.getElementById('frameSlider');
+		const frameLabel = document.getElementById('frameLabel');
+
+		fetch('/count').then(r => r.json()).then(n => {
+			slider.max = n - 1;
+			frameLabel.innerText = 'Frame 1 / ' + n;
+		});
+
+		slider.addEventListener('input', () => {
+			img.src = '/image/' + slider.value;
+			frameLabel.innerText = 'Frame ' + (parseInt(slider.value) + 1) + ' / ' + (parseInt(slider.max) + 1);
+		});
+
 		saveBtn.addEventListener('click', () => {
 			if (!window.currentSelection || window.currentSelection.maxX === window.currentSelection.minX) {
 				alert('Please draw a selection first!');
@@ -154,7 +173,7 @@ const htmlUI = `
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(window.currentSelection)
 			}).then(() => {
-				status.innerText = "Processing started. Check your terminal.";
+				status.innerText = "Processing has started, go check your terminal.";
 			}).catch(err => alert("Error: " + err));
 		});
 	</script>
@@ -212,8 +231,19 @@ func main() {
 		w.Write([]byte(htmlUI))
 	})
 
-	http.HandleFunc("/image", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, files[0])
+	http.HandleFunc("/count", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, "%d", len(files))
+	})
+
+	http.HandleFunc("/image/", func(w http.ResponseWriter, r *http.Request) {
+		var idx int
+		fmt.Sscanf(strings.TrimPrefix(r.URL.Path, "/image/"), "%d", &idx)
+		if idx < 0 || idx >= len(files) {
+			http.Error(w, "out of range", http.StatusBadRequest)
+			return
+		}
+		http.ServeFile(w, r, files[idx])
 	})
 
 	http.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
