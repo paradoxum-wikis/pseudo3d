@@ -53,6 +53,8 @@ const htmlUI = `
 	<title>Safe Zone Selector</title>
 	<style>
 		body { font-family: system-ui, sans-serif; text-align: center; background: oklch(20% 0 0); color: oklch(100% 0 0); margin: 0; padding: 1.25em; }
+		h2 { margin: 0 }
+		p { margin-top: .25em; }
 		#wrapper { display: inline-block; position: relative; cursor: crosshair; user-select: none; }
 		img { max-width: 90vw; max-height: 80vh; display: block; }
 		#selection { position: absolute; border: 0.125em solid oklch(60% 5 120); background: oklch(60% 5 120 / 0.2); display: none; pointer-events: none; }
@@ -62,11 +64,12 @@ const htmlUI = `
 		#status { margin-top: 0.625em; color: oklch(60% 5 120); }
 		#frameSlider { width:60%; margin-top:0.75em; }
 		#frameLabel { margin-left:0.5em; font-size:0.9em; color: oklch(60% 0 0); }
+		#toggleLock { font-size:0.85em; padding: 0.3em 0.8em; margin-top: 0.75em; }
 	</style>
 </head>
 <body>
 	<h2>Draw Safe Zone</h2>
-	<p>Click and drag to define the crop area. This will be used for all frames.</p>
+	<p>Click and drag to define the crop area. This will be used for all frames.<br/><button id="toggleLock">Square Ratio</button></p>
 
 	<div id="wrapper">
 		<img id="refImage" src="/image/0" draggable="false">
@@ -90,6 +93,13 @@ const htmlUI = `
 		const saveBtn = document.getElementById('saveBtn');
 
 		let isDragging = false;
+		let lockAspect = true;
+
+		const toggleLock = document.getElementById('toggleLock');
+		toggleLock.addEventListener('click', () => {
+			lockAspect = !lockAspect;
+			toggleLock.textContent = lockAspect ? 'Square Ratio' : 'Freeform';
+		});
 		let startX, startY;
 		let box = { x: 0, y: 0, w: 0, h: 0 };
 
@@ -114,14 +124,20 @@ const htmlUI = `
 			const rawW = currentX - startX;
 			const rawH = currentY - startY;
 
-			const side = Math.min(Math.abs(rawW), Math.abs(rawH));
-			const signX = rawW >= 0 ? 1 : -1;
-			const signY = rawH >= 0 ? 1 : -1;
-
-			box.w = side;
-			box.h = side;
-			box.x = signX >= 0 ? startX : startX - side;
-			box.y = signY >= 0 ? startY : startY - side;
+			if (lockAspect) {
+				const side = Math.min(Math.abs(rawW), Math.abs(rawH));
+				const signX = rawW >= 0 ? 1 : -1;
+				const signY = rawH >= 0 ? 1 : -1;
+				box.w = side;
+				box.h = side;
+				box.x = signX >= 0 ? startX : startX - side;
+				box.y = signY >= 0 ? startY : startY - side;
+			} else {
+				box.w = Math.abs(rawW);
+				box.h = Math.abs(rawH);
+				box.x = rawW >= 0 ? startX : startX + rawW;
+				box.y = rawH >= 0 ? startY : startY + rawH;
+			}
 
 			selection.style.left = box.x + 'px';
 			selection.style.top = box.y + 'px';
