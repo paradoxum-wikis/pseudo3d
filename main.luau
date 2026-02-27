@@ -14,6 +14,9 @@ local HEIGHT_MAX      = 10       			-- highest the camera can go (relative to mo
 local PIVOT_STEP      = 0.5      			-- units moved per A/S press
 local PIVOT_MIN       = -10      			-- leftmost pivot shift allowed
 local PIVOT_MAX       = 10       			-- rightmost pivot shift allowed
+local ZOOM_STEP       = 1        			-- units moved per R/F press
+local ZOOM_MIN        = 2        			-- closest the camera can get
+local ZOOM_MAX        = 50       			-- furthest the camera can get
 local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
 local FLAT_LIGHTING   = true     			-- set false to keep your scene lighting as is
 
@@ -124,7 +127,8 @@ cam.FieldOfView = fov
 
 local currentFrame        = 1
 local heightOffset        = 0
-local pivotOffset         = 0
+local distance            = DISTANCE
+local pivotOffset         = 0    -- horizontal shift of the rotation pivot (world X)
 local startingAngleOffset = 0
 local captureStarted      = false
 local capturing           = false
@@ -136,14 +140,14 @@ end
 local function setFrame(i)
 	local lookAt = getLookAt()
 	local angle  = math.rad((i - 1) * (360 / ROTATIONS)) + startingAngleOffset
-	local camPos = lookAt + Vector3.new(math.sin(angle) * DISTANCE, 0, math.cos(angle) * DISTANCE)
+	local camPos = lookAt + Vector3.new(math.sin(angle) * distance, 0, math.cos(angle) * distance)
 	cam.CFrame   = CFrame.lookAt(camPos, lookAt)
 	backdrop.CFrame = CFrame.lookAt(lookAt + ((lookAt - camPos).Unit * 500), camPos)
 
 	if not captureStarted then
 		local side = startingAngleOffset == 0 and "Front" or "Back"
-		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Frame %d/%d", side, heightOffset, pivotOffset, i, ROTATIONS)
-		subLabel.Text = "W: flip | E/D: height | A/S: pivot left/right | Q: begin capture"
+		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Zoom: %.1f | Frame %d/%d", side, heightOffset, pivotOffset, distance, i, ROTATIONS)
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot | R/F: zoom | Q: begin capture"
 	else
 		label.Text = string.format("Capturing frame %d / %d  -  Height: %+.1f  Pivot: %+.1f", i, ROTATIONS, heightOffset, pivotOffset)
 		subLabel.Text = ""
@@ -212,6 +216,14 @@ UIS.InputBegan:Connect(function(input, processed)
 
 	elseif input.KeyCode == Enum.KeyCode.S then
 		pivotOffset = math.min(pivotOffset + PIVOT_STEP, PIVOT_MAX)
+		setFrame(currentFrame)
+
+	elseif input.KeyCode == Enum.KeyCode.R then
+		distance = math.max(distance - ZOOM_STEP, ZOOM_MIN)
+		setFrame(currentFrame)
+
+	elseif input.KeyCode == Enum.KeyCode.F then
+		distance = math.min(distance + ZOOM_STEP, ZOOM_MAX)
 		setFrame(currentFrame)
 
 	elseif input.KeyCode == Enum.KeyCode.Q then
