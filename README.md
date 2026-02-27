@@ -1,7 +1,8 @@
 # The Manual
 
 > [!NOTE]
-> I am currently working on a prebuilt version of this project, which will be available for download soon.
+> I am currently working on a prebuilt version of this project (so no Git, or Go), which will be available for download soon.
+>
 > In the meantime, you can follow the instructions below to set up the project on your local machine.
 
 In order to use this project, you need to have Go, Git (or GitHub Desktop), Roblox Studio, and a browser. Most likely, you already have the latter two, but you may need to install Go and Git.
@@ -51,7 +52,7 @@ You will have to move all of the files you've just captured (24 by default) to t
 
 ## Processing the Frames
 
-Now that you've captured the frames and moved them into the "process" folder, you can start processing them.
+After you've captured the frames and moved them into the "process" folder, you can start processing them.
 
 First, make sure you are in the **root directory of the repository** in your terminal, and not inside any folders such as "process" or "archive."
 
