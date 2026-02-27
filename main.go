@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"hash/crc32"
 	"image"
 	"image/color"
 	"image/draw"
@@ -102,10 +105,17 @@ const htmlUI = `
 			const currentX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
 			const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
 
-			box.x = Math.min(startX, currentX);
-			box.y = Math.min(startY, currentY);
-			box.w = Math.abs(currentX - startX);
-			box.h = Math.abs(currentY - startY);
+			const rawW = currentX - startX;
+			const rawH = currentY - startY;
+
+			const side = Math.min(Math.abs(rawW), Math.abs(rawH));
+			const signX = rawW >= 0 ? 1 : -1;
+			const signY = rawH >= 0 ? 1 : -1;
+
+			box.w = side;
+			box.h = side;
+			box.x = signX >= 0 ? startX : startX - side;
+			box.y = signY >= 0 ? startY : startY - side;
 
 			selection.style.left = box.x + 'px';
 			selection.style.top = box.y + 'px';
@@ -299,17 +309,43 @@ func runBatchProcessing() {
 		draw.Draw(sheet, image.Rect(i*targetSize, 0, (i+1)*targetSize, targetSize), frame, image.Point{}, draw.Src)
 	}
 
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, sheet); err != nil {
+		log.Fatal(err)
+	}
+
+	pngData := buf.Bytes()
+	if len(pngData) > 33 {
+		textData := append([]byte("Description"), 0)
+		textData = append(textData, []byte("Generated using pseudo3d-viewer 1.0")...)
+
+		var newPng bytes.Buffer
+		newPng.Write(pngData[:33])
+
+		binary.Write(&newPng, binary.BigEndian, uint32(len(textData)))
+		newPng.Write([]byte("tEXt"))
+		newPng.Write(textData)
+
+		crc := crc32.NewIEEE()
+		crc.Write([]byte("tEXt"))
+		crc.Write(textData)
+		binary.Write(&newPng, binary.BigEndian, crc.Sum32())
+
+		newPng.Write(pngData[33:])
+		pngData = newPng.Bytes()
+	}
+
 	out, err := os.Create(outputFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer out.Close()
 
-	if err := png.Encode(out, sheet); err != nil {
+	if _, err := out.Write(pngData); err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\n✓ Spritesheet saved as %s (%d frames)\n", outputFile, len(frames))
+	fmt.Printf("\nHeeho! Spritesheet saved as %s (%d frames)\n", outputFile, len(frames))
 }
 
 func chromaKeyRemove(img image.Image) image.Image {
