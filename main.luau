@@ -8,7 +8,7 @@ local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
 --  CONFIGURATION
 local ROTATIONS       = 24					-- number of frames per full rotation
 local DISTANCE        = 12       			-- camera distance from model center
-local HEIGHT_STEP     = 1        			-- units moved per E/D press
+local HEIGHT_STEP     = .5        			-- units moved per E/D press
 local HEIGHT_MIN      = -10      			-- lowest the camera can go (relative to model center)
 local HEIGHT_MAX      = 10       			-- highest the camera can go (relative to model center)
 local PIVOT_STEP      = 0.5      			-- units moved per A/S press
