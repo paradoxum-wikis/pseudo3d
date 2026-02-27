@@ -82,7 +82,7 @@ const htmlUI = `
 
 	<div class="controls">
 		<button id="saveBtn">Save & Process!</button>
-		<div id="status">No selection</div>
+		<div id="status">No selection...</div>
 	</div>
 
 	<script>
@@ -173,6 +173,35 @@ const htmlUI = `
 		slider.addEventListener('input', () => {
 			img.src = '/image/' + slider.value;
 			frameLabel.innerText = 'Frame ' + (parseInt(slider.value) + 1) + ' / ' + (parseInt(slider.max) + 1);
+		});
+
+
+		document.addEventListener('keydown', (e) => {
+			if (!window.currentSelection) return;
+			const arrows = { ArrowLeft: [-1,0], ArrowRight: [1,0], ArrowUp: [0,-1], ArrowDown: [0,1] };
+			const delta = arrows[e.key];
+			if (!delta) return;
+			e.preventDefault();
+
+			const step = e.shiftKey ? 10 : 1;
+			const sel = window.currentSelection;
+			sel.minX += delta[0] * step;
+			sel.maxX += delta[0] * step;
+			sel.minY += delta[1] * step;
+			sel.maxY += delta[1] * step;
+
+			const scaleX = img.naturalWidth / img.width;
+			const scaleY = img.naturalHeight / img.height;
+			box.x = sel.minX / scaleX;
+			box.y = sel.minY / scaleY;
+			box.w = (sel.maxX - sel.minX) / scaleX;
+			box.h = (sel.maxY - sel.minY) / scaleY;
+			selection.style.left = box.x + 'px';
+			selection.style.top = box.y + 'px';
+			selection.style.width = box.w + 'px';
+			selection.style.height = box.h + 'px';
+
+			status.innerText = 'Selected: ' + (sel.maxX-sel.minX) + 'x' + (sel.maxY-sel.minY) + ' at (' + sel.minX + ',' + sel.minY + ')';
 		});
 
 		saveBtn.addEventListener('click', () => {
