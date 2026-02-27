@@ -324,7 +324,12 @@ func runBatchProcessing() {
 
 	for _, path := range files {
 		img := loadImage(path)
-		var currentImg image.Image = img
+		var currentImg image.Image = imaging.Crop(img, image.Rect(
+			globalSafeZone.MinX,
+			globalSafeZone.MinY,
+			globalSafeZone.MaxX,
+			globalSafeZone.MaxY,
+		))
 
 		if !skipBgRemoval {
 			currentImg = chromaKeyRemove(currentImg)
@@ -335,17 +340,9 @@ func runBatchProcessing() {
 			}
 		}
 
-		cropped := imaging.Crop(currentImg, image.Rect(
-			globalSafeZone.MinX,
-			globalSafeZone.MinY,
-			globalSafeZone.MaxX,
-			globalSafeZone.MaxY,
-		))
-
-		resized := imaging.Fit(cropped, targetSize, targetSize, imaging.Lanczos)
+		resized := imaging.Fit(currentImg, targetSize, targetSize, imaging.Lanczos)
 		squareFrame := imaging.New(targetSize, targetSize, color.Transparent)
 		squareFrame = imaging.PasteCenter(squareFrame, resized)
-
 		frames = append(frames, squareFrame)
 		bar.Add(1)
 	}
@@ -363,7 +360,7 @@ func runBatchProcessing() {
 	pngData := buf.Bytes()
 	if len(pngData) > 33 {
 		textData := append([]byte("Description"), 0)
-		textData = append(textData, []byte("Generated using pseudo3d-viewer 1.0")...)
+		textData = append(textData, []byte("Generated using pseudo3d-viewer 1.1")...)
 
 		var newPng bytes.Buffer
 		newPng.Write(pngData[:33])
