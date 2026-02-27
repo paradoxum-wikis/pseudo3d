@@ -5,8 +5,14 @@ local CaptureService = game:GetService("CaptureService")
 local Lighting = game:GetService("Lighting")
 local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
 
-local ROTATIONS = 24
-local DISTANCE = 12
+--  CONFIGURATION
+local ROTATIONS       = 24					-- number of frames per full rotation
+local DISTANCE        = 12       			-- camera distance from model center
+local HEIGHT_STEP     = 1        			-- units moved per E/D press
+local HEIGHT_MIN      = -10      			-- lowest the camera can go (relative to model center)
+local HEIGHT_MAX      = 10       			-- highest the camera can go (relative to model center)
+local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
+local FLAT_LIGHTING   = true     			-- set false to keep your scene lighting as is
 
 local player = Players.LocalPlayer
 for _, gui in ipairs(player.PlayerGui:GetChildren()) do
@@ -18,15 +24,23 @@ bg.IgnoreGuiInset = true
 bg.DisplayOrder = 999
 
 local label = Instance.new("TextLabel", bg)
-label.Size = UDim2.fromOffset(500, 50)
-label.Position = UDim2.new(0.5, -250, 0, 20)
+label.Size = UDim2.fromOffset(600, 30)
+label.Position = UDim2.new(0.5, -300, 0, 16)
 label.BackgroundTransparency = 1
 label.TextColor3 = Color3.new(1, 1, 1)
-label.TextSize = 24
+label.TextSize = 20
 label.Font = Enum.Font.GothamBold
 
+local subLabel = Instance.new("TextLabel", bg)
+subLabel.Size = UDim2.fromOffset(600, 24)
+subLabel.Position = UDim2.new(0.5, -300, 0, 44)
+subLabel.BackgroundTransparency = 1
+subLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+subLabel.TextSize = 16
+subLabel.Font = Enum.Font.Gotham
+
 local model = workspace:WaitForChild("Target", 10)
-if not model then return warn("No 'Target' found!") end
+if not model then return warn("No 'Target' found in workspace!") end
 
 local rootPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
 if rootPart then rootPart.Anchored = true end
@@ -37,6 +51,13 @@ for _, part in ipairs(model:GetDescendants()) do
 	end
 end
 
+for _, desc in ipairs(model:GetDescendants()) do
+	if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam")
+		or desc:IsA("Smoke") or desc:IsA("Fire") or desc:IsA("Sparkles") then
+		desc.Enabled = false
+	end
+end
+
 local targetAnimSeq = model:FindFirstChild("Animation")
 local humOrCtrl = model:FindFirstChildOfClass("Humanoid") or model:FindFirstChildOfClass("AnimationController")
 
@@ -44,7 +65,6 @@ if humOrCtrl and targetAnimSeq and targetAnimSeq:IsA("KeyframeSequence") then
 	local animator = humOrCtrl:FindFirstChildOfClass("Animator") or Instance.new("Animator", humOrCtrl)
 	local anim = Instance.new("Animation")
 	anim.AnimationId = KeyframeSequenceProvider:RegisterKeyframeSequence(targetAnimSeq)
-
 	local track = animator:LoadAnimation(anim)
 	track:Play()
 	track:AdjustSpeed(0)
@@ -53,7 +73,9 @@ end
 
 task.wait(0.5)
 
-local minY, maxY, minX, maxX, minZ, maxZ = math.huge, -math.huge, math.huge, -math.huge, math.huge, -math.huge
+local minY, maxY = math.huge, -math.huge
+local minX, maxX = math.huge, -math.huge
+local minZ, maxZ = math.huge, -math.huge
 for _, part in ipairs(model:GetDescendants()) do
 	if part:IsA("BasePart") then
 		local p, s = part.Position, part.Size
@@ -63,22 +85,23 @@ for _, part in ipairs(model:GetDescendants()) do
 	end
 end
 
-local lookAt = Vector3.new((minX + maxX)/2, (minY + maxY)/2, (minZ + maxZ)/2)
+local modelCenter = Vector3.new((minX + maxX)/2, (minY + maxY)/2, (minZ + maxZ)/2)
 local fov = math.deg(2 * math.atan((math.max(maxY - minY, math.max(maxX - minX, maxZ - minZ)) * 0.6) / DISTANCE))
 
-for _, child in ipairs(Lighting:GetChildren()) do
-	if child:IsA("PostEffect") or child:IsA("Atmosphere") or child:IsA("Sky") or child:IsA("Clouds") then
-		child:Destroy()
+if FLAT_LIGHTING then
+	for _, child in ipairs(Lighting:GetChildren()) do
+		if child:IsA("PostEffect") or child:IsA("Atmosphere") or child:IsA("Sky") or child:IsA("Clouds") then
+			child:Destroy()
+		end
 	end
+	Lighting.Ambient = Color3.new(1, 1, 1)
+	Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+	Lighting.Brightness = 0
+	Lighting.GlobalShadows = false
+	Lighting.FogEnd = 100000
+	Lighting.EnvironmentDiffuseScale = 0
+	Lighting.EnvironmentSpecularScale = 0
 end
-
-Lighting.Ambient = Color3.new(1, 1, 1)
-Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
-Lighting.Brightness = 0
-Lighting.GlobalShadows = false
-Lighting.FogEnd = 100000
-Lighting.EnvironmentDiffuseScale = 0
-Lighting.EnvironmentSpecularScale = 0
 
 local backdrop = Instance.new("Part", workspace)
 backdrop.Size = Vector3.new(2000, 2000, 1)
@@ -90,27 +113,36 @@ local surfaceGui = Instance.new("SurfaceGui", backdrop)
 surfaceGui.LightInfluence = 0
 local bgFrame = Instance.new("Frame", surfaceGui)
 bgFrame.Size = UDim2.fromScale(1, 1)
-bgFrame.BackgroundColor3 = Color3.new(1, 0, 1)
+bgFrame.BackgroundColor3 = BACKDROP_COLOR
 
 local cam = workspace.CurrentCamera
 cam.CameraType = Enum.CameraType.Scriptable
 cam.FieldOfView = fov
 
-local currentFrame = 1
+local currentFrame   = 1
+local heightOffset   = 0
 local startingAngleOffset = 0
 local captureStarted = false
-local capturing = false
+local capturing      = false
+
+local function getLookAt()
+	return modelCenter + Vector3.new(0, heightOffset, 0)
+end
 
 local function setFrame(i)
-	local angle = math.rad((i - 1) * (360 / ROTATIONS)) + startingAngleOffset
+	local lookAt = getLookAt()
+	local angle  = math.rad((i - 1) * (360 / ROTATIONS)) + startingAngleOffset
 	local camPos = lookAt + Vector3.new(math.sin(angle) * DISTANCE, 0, math.cos(angle) * DISTANCE)
-	cam.CFrame = CFrame.lookAt(camPos, lookAt)
+	cam.CFrame   = CFrame.lookAt(camPos, lookAt)
 	backdrop.CFrame = CFrame.lookAt(lookAt + ((lookAt - camPos).Unit * 500), camPos)
+
 	if not captureStarted then
 		local side = startingAngleOffset == 0 and "Front" or "Back"
-		label.Text = string.format("Starting from: %s  —  W to flip, Q to begin", side)
+		label.Text = string.format("Start: %s | Height offset: %+.1f | Frame %d/%d", side, heightOffset, i, ROTATIONS)
+		subLabel.Text = "W: flip | E: raise | D: lower | Q: begin capture"
 	else
-		label.Text = string.format("Frame %d/%d  —  Capturing...", i, ROTATIONS)
+		label.Text = string.format("Capturing frame %d / %d  —  Height offset: %+.1f", i, ROTATIONS, heightOffset)
+		subLabel.Text = ""
 	end
 end
 
@@ -119,51 +151,58 @@ local function captureNext()
 	capturing = true
 
 	label.Visible = false
+	subLabel.Visible = false
 	UIS.MouseIconEnabled = false
 	RunService.RenderStepped:Wait()
 	RunService.RenderStepped:Wait()
 
 	CaptureService:CaptureScreenshot(function(tempContentId)
-		CaptureService:PromptSaveCapturesToGallery(
-			{tempContentId},
-			function(results)
-				local saved = results[tempContentId]
-				print(string.format("Captured frame %d/%d (saved: %s)", currentFrame, ROTATIONS, tostring(saved)))
+		CaptureService:PromptSaveCapturesToGallery({tempContentId}, function(results)
+			local saved = results[tempContentId]
+			print(string.format("Frame %d/%d captured (saved: %s)", currentFrame, ROTATIONS, tostring(saved)))
 
-				if currentFrame < ROTATIONS then
-					currentFrame += 1
-					setFrame(currentFrame)
-
-					RunService.RenderStepped:Wait()
-					RunService.RenderStepped:Wait()
-
-					UIS.MouseIconEnabled = true
-					label.Visible = true
-					capturing = false
-					captureNext()
-				else
-					currentFrame += 1
-					UIS.MouseIconEnabled = true
-					label.Visible = true
-					label.Text = "Heeho! All frames captured!"
-					print("Heeho! All frames captured!")
-					capturing = false
-				end
+			if currentFrame < ROTATIONS then
+				currentFrame += 1
+				setFrame(currentFrame)
+				RunService.RenderStepped:Wait()
+				RunService.RenderStepped:Wait()
+				UIS.MouseIconEnabled = true
+				label.Visible = true
+				subLabel.Visible = true
+				capturing = false
+				captureNext()
+			else
+				currentFrame += 1
+				UIS.MouseIconEnabled = true
+				label.Visible = true
+				subLabel.Visible = true
+				label.Text = "Heeho! All frames captured!"
+				subLabel.Text = ""
+				print("Heeho! All frames captured!")
+				capturing = false
 			end
-		)
+		end)
 	end)
 end
 
 setFrame(1)
 
 UIS.InputBegan:Connect(function(input, processed)
-	if input.KeyCode == Enum.KeyCode.W and not captureStarted then
-		startingAngleOffset = startingAngleOffset == 0 and math.pi or 0
-		setFrame(1)
-		return
-	end
+	if captureStarted then return end
 
-	if input.KeyCode == Enum.KeyCode.Q and not captureStarted then
+	if input.KeyCode == Enum.KeyCode.W then
+		startingAngleOffset = startingAngleOffset == 0 and math.pi or 0
+		setFrame(currentFrame)
+
+	elseif input.KeyCode == Enum.KeyCode.E then
+		heightOffset = math.min(heightOffset + HEIGHT_STEP, HEIGHT_MAX)
+		setFrame(currentFrame)
+
+	elseif input.KeyCode == Enum.KeyCode.D then
+		heightOffset = math.max(heightOffset - HEIGHT_STEP, HEIGHT_MIN)
+		setFrame(currentFrame)
+
+	elseif input.KeyCode == Enum.KeyCode.Q then
 		captureStarted = true
 		setFrame(currentFrame)
 		captureNext()
