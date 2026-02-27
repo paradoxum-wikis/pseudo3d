@@ -195,40 +195,27 @@ end
 
 setFrame(1)
 
+local keyActions = {
+	[Enum.KeyCode.W] = function()
+		startingAngleOffset = startingAngleOffset == 0 and math.pi or 0
+	end,
+	[Enum.KeyCode.E] = function() heightOffset = math.min(heightOffset + HEIGHT_STEP, HEIGHT_MAX) end,
+	[Enum.KeyCode.D] = function() heightOffset = math.max(heightOffset - HEIGHT_STEP, HEIGHT_MIN) end,
+	[Enum.KeyCode.A] = function() pivotOffset  = math.max(pivotOffset  - PIVOT_STEP,  PIVOT_MIN)  end,
+	[Enum.KeyCode.S] = function() pivotOffset  = math.min(pivotOffset  + PIVOT_STEP,  PIVOT_MAX)  end,
+	[Enum.KeyCode.R] = function() distance     = math.max(distance     - ZOOM_STEP,   ZOOM_MIN)   end,
+	[Enum.KeyCode.F] = function() distance     = math.min(distance     + ZOOM_STEP,   ZOOM_MAX)   end,
+	[Enum.KeyCode.Q] = function()
+		captureStarted = true
+		captureNext()
+	end,
+}
+
 UIS.InputBegan:Connect(function(input, processed)
 	if captureStarted then return end
-
-	if input.KeyCode == Enum.KeyCode.W then
-		startingAngleOffset = startingAngleOffset == 0 and math.pi or 0
+	local action = keyActions[input.KeyCode]
+	if action then
+		action()
 		setFrame(currentFrame)
-
-	elseif input.KeyCode == Enum.KeyCode.E then
-		heightOffset = math.min(heightOffset + HEIGHT_STEP, HEIGHT_MAX)
-		setFrame(currentFrame)
-
-	elseif input.KeyCode == Enum.KeyCode.D then
-		heightOffset = math.max(heightOffset - HEIGHT_STEP, HEIGHT_MIN)
-		setFrame(currentFrame)
-
-	elseif input.KeyCode == Enum.KeyCode.A then
-		pivotOffset = math.max(pivotOffset - PIVOT_STEP, PIVOT_MIN)
-		setFrame(currentFrame)
-
-	elseif input.KeyCode == Enum.KeyCode.S then
-		pivotOffset = math.min(pivotOffset + PIVOT_STEP, PIVOT_MAX)
-		setFrame(currentFrame)
-
-	elseif input.KeyCode == Enum.KeyCode.R then
-		distance = math.max(distance - ZOOM_STEP, ZOOM_MIN)
-		setFrame(currentFrame)
-
-	elseif input.KeyCode == Enum.KeyCode.F then
-		distance = math.min(distance + ZOOM_STEP, ZOOM_MAX)
-		setFrame(currentFrame)
-
-	elseif input.KeyCode == Enum.KeyCode.Q then
-		captureStarted = true
-		setFrame(currentFrame)
-		captureNext()
 	end
 end)
