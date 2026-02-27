@@ -11,6 +11,9 @@ local DISTANCE        = 12       			-- camera distance from model center
 local HEIGHT_STEP     = 1        			-- units moved per E/D press
 local HEIGHT_MIN      = -10      			-- lowest the camera can go (relative to model center)
 local HEIGHT_MAX      = 10       			-- highest the camera can go (relative to model center)
+local PIVOT_STEP      = 0.5      			-- units moved per A/S press
+local PIVOT_MIN       = -10      			-- leftmost pivot shift allowed
+local PIVOT_MAX       = 10       			-- rightmost pivot shift allowed
 local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
 local FLAT_LIGHTING   = true     			-- set false to keep your scene lighting as is
 
@@ -24,16 +27,16 @@ bg.IgnoreGuiInset = true
 bg.DisplayOrder = 999
 
 local label = Instance.new("TextLabel", bg)
-label.Size = UDim2.fromOffset(600, 30)
-label.Position = UDim2.new(0.5, -300, 0, 16)
+label.Size = UDim2.fromOffset(700, 30)
+label.Position = UDim2.new(0.5, -350, 0, 16)
 label.BackgroundTransparency = 1
 label.TextColor3 = Color3.new(1, 1, 1)
 label.TextSize = 20
 label.Font = Enum.Font.GothamBold
 
 local subLabel = Instance.new("TextLabel", bg)
-subLabel.Size = UDim2.fromOffset(600, 24)
-subLabel.Position = UDim2.new(0.5, -300, 0, 44)
+subLabel.Size = UDim2.fromOffset(700, 24)
+subLabel.Position = UDim2.new(0.5, -350, 0, 44)
 subLabel.BackgroundTransparency = 1
 subLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
 subLabel.TextSize = 16
@@ -119,14 +122,15 @@ local cam = workspace.CurrentCamera
 cam.CameraType = Enum.CameraType.Scriptable
 cam.FieldOfView = fov
 
-local currentFrame   = 1
-local heightOffset   = 0
+local currentFrame        = 1
+local heightOffset        = 0
+local pivotOffset         = 0
 local startingAngleOffset = 0
-local captureStarted = false
-local capturing      = false
+local captureStarted      = false
+local capturing           = false
 
 local function getLookAt()
-	return modelCenter + Vector3.new(0, heightOffset, 0)
+	return modelCenter + Vector3.new(pivotOffset, heightOffset, 0)
 end
 
 local function setFrame(i)
@@ -138,10 +142,10 @@ local function setFrame(i)
 
 	if not captureStarted then
 		local side = startingAngleOffset == 0 and "Front" or "Back"
-		label.Text = string.format("Start: %s | Height offset: %+.1f | Frame %d/%d", side, heightOffset, i, ROTATIONS)
-		subLabel.Text = "W: flip | E: raise | D: lower | Q: begin capture"
+		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Frame %d/%d", side, heightOffset, pivotOffset, i, ROTATIONS)
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot left/right | Q: begin capture"
 	else
-		label.Text = string.format("Capturing frame %d / %d  —  Height offset: %+.1f", i, ROTATIONS, heightOffset)
+		label.Text = string.format("Capturing frame %d / %d  -  Height: %+.1f  Pivot: %+.1f", i, ROTATIONS, heightOffset, pivotOffset)
 		subLabel.Text = ""
 	end
 end
@@ -200,6 +204,14 @@ UIS.InputBegan:Connect(function(input, processed)
 
 	elseif input.KeyCode == Enum.KeyCode.D then
 		heightOffset = math.max(heightOffset - HEIGHT_STEP, HEIGHT_MIN)
+		setFrame(currentFrame)
+
+	elseif input.KeyCode == Enum.KeyCode.A then
+		pivotOffset = math.max(pivotOffset - PIVOT_STEP, PIVOT_MIN)
+		setFrame(currentFrame)
+
+	elseif input.KeyCode == Enum.KeyCode.S then
+		pivotOffset = math.min(pivotOffset + PIVOT_STEP, PIVOT_MAX)
 		setFrame(currentFrame)
 
 	elseif input.KeyCode == Enum.KeyCode.Q then
