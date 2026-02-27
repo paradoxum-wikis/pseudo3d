@@ -82,11 +82,11 @@ Here is a full list of available flags:
 
 | Flag | Default | Description |
 |---|---|---|
-| `-process` | `false` | Skip the web UI and run batch processing directly using the saved safe zone |
-| `-size` | `512` | Output size of each square frame in pixels (e.g. `300` for 300×300) |
-| `-no-bg` | `false` | Skip chroma key background removal entirely |
-| `-threshold` | `70.0` | Tolerance for background removal — higher values are more aggressive |
-| `-in` | `./process` | Input directory containing your PNG frames |
-| `-out` | `spritesheet.png` | Output filename for the final spritesheet |
-| `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue |
-| `-color` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your LocalScript) |
+| `-process` | `false` | Skip the web UI and run batch processing directly using the saved safe zone. |
+| `-size` | `512` | Output size of each square frame in pixels (e.g. `300` for 300×300). |
+| `-no-bg` | `false` | Skip chroma key background removal entirely. |
+| `-threshold` | `70.0` | Tolerance for background removal (higher values are more aggressive). |
+| `-in` | `./process` | Input directory containing your PNG frames. |
+| `-out` | `spritesheet` | Output filename for the final spritesheet. |
+| `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
+| `-color` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your LocalScript). |

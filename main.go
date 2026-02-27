@@ -149,6 +149,7 @@ func main() {
 }
 
 func runBatchProcessing() {
+	outputFile = strings.TrimSuffix(outputFile, ".png") + ".png"
 	loadSafeZoneConfig()
 	if !globalSafeZone.Active {
 		fmt.Println("No safe zone configured. Run without -process to open the Web UI first.")
