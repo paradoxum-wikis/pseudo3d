@@ -20,6 +20,7 @@ local ZOOM_MAX        = 50       			-- furthest the camera can get
 local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
 local FLAT_LIGHTING   = true     			-- set false to keep your scene lighting as is
 local BLOOM_INTENSITY = 0					-- set to nil to leave bloom as is
+local CLEAR_WORKSPACE = true				-- remove everything in workspace except Target model
 
 local player = Players.LocalPlayer
 for _, gui in ipairs(player.PlayerGui:GetChildren()) do
@@ -48,6 +49,14 @@ subLabel.Font = Enum.Font.Gotham
 
 local model = workspace:WaitForChild("Target", 10)
 if not model then return warn("No 'Target' found in workspace!") end
+
+if CLEAR_WORKSPACE then
+	for _, obj in ipairs(workspace:GetChildren()) do
+		if obj ~= model and obj ~= workspace.Terrain and not obj:IsA("Camera") then
+			obj:Destroy()
+		end
+	end
+end
 
 local rootPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
 if rootPart then rootPart.Anchored = true end
