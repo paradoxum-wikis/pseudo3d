@@ -47,6 +47,7 @@ func main() {
 	files, err := getPNGFiles(inputDir)
 	if err != nil || len(files) == 0 {
 		fmt.Printf("No PNG files found in %s\n", inputDir)
+		fmt.Println("TIP: Run with -help (or -h) to see all available flags.")
 		time.Sleep(3 * time.Second)
 		return
 	}

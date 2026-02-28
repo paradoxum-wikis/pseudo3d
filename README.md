@@ -10,9 +10,9 @@ The archives available for downloads are:
 
 ## Setting Up the Toolset
 
-1. Open the folder in your file explorer, and you will see a `Main.rbxmx` file.
+1. Open the folder in your file explorer, and you will see a "Main.rbxmx" file.
 2. Drag and drop that file into your Roblox Studio.
-3. Head to the explorer window, and move the newly added `Main` into `StarterPlayer` > `StarterPlayerScripts`.
+3. Head to the explorer window, and move the newly added "Main" into `StarterPlayer` > `StarterPlayerScripts`.
 
 ## Capturing the Frames
 
@@ -57,7 +57,7 @@ The program will close the UI and immediately begin batch processing all frames 
 
 ## Flags Reference
 
-For advanced users, there are some additional options you can configure to customize the processing behavior. These options are passed as flags when running the executable. For example:
+For advanced users, there are some additional options you can configure to customize the processing behavior. These options are passed as flags when running the executable through a terminal. For example:
 
 Let's say, if you've already configured your safe zone and just want to re-run the batch processing without opening the web UI again, maybe because the previous run wasn't up to your liking, you can use the `-process` flag:
 
@@ -82,5 +82,7 @@ Here is a full list of available flags:
 | `-in` | `./process` | Input directory containing your PNG frames. |
 | `-out` | `spritesheet.png` | Output filename for the final spritesheet. |
 | `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
-| `-color-bg` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your LocalScript). |
+| `-color-bg` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your "Main" `LocalScript`). |
 | `-skip-prescale` | `false` | Prescale preview images to make the UI perform better; the original files are still used for processing. |
+
+*You can also access the above list by running the executable with the `-help` (`-h`) flag.*
