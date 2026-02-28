@@ -135,27 +135,21 @@ func colorDiff(c1, c2 color.RGBA) float64 {
 func erodeAlpha(img *image.RGBA) *image.RGBA {
 	bounds := img.Bounds()
 	refined := image.NewRGBA(bounds)
-	neighbors := [][2]int{{0, 1}, {0, -1}, {1, 0}, {-1, 0}}
+	stride := img.Stride
+
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			_, _, _, a := img.At(x, y).RGBA()
-			if a > 0 {
-				isEdge := false
-				for _, offset := range neighbors {
-					nx, ny := x+offset[0], y+offset[1]
-					if nx >= bounds.Min.X && nx < bounds.Max.X && ny >= bounds.Min.Y && ny < bounds.Max.Y {
-						_, _, _, na := img.At(nx, ny).RGBA()
-						if na == 0 {
-							isEdge = true
-							break
-						}
-					}
-				}
-				if isEdge {
-					refined.Set(x, y, color.Transparent)
-				} else {
-					refined.Set(x, y, img.At(x, y))
-				}
+			off := img.PixOffset(x, y)
+			if img.Pix[off+3] == 0 {
+				continue
+			}
+			isEdge := (x > bounds.Min.X && img.Pix[off-4+3] == 0) ||
+				(x < bounds.Max.X-1 && img.Pix[off+4+3] == 0) ||
+				(y > bounds.Min.Y && img.Pix[off-stride+3] == 0) ||
+				(y < bounds.Max.Y-1 && img.Pix[off+stride+3] == 0)
+
+			if !isEdge {
+				copy(refined.Pix[off:off+4], img.Pix[off:off+4])
 			}
 		}
 	}
