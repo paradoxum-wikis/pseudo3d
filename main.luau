@@ -61,6 +61,12 @@ end
 local rootPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
 if rootPart then rootPart.Anchored = true end
 
+local function getFrontAngle()
+	return math.atan2(rootPart.CFrame.LookVector.X, rootPart.CFrame.LookVector.Z)
+end
+
+local startingAngleOffset = rootPart and getFrontAngle() or 0
+
 for _, part in ipairs(model:GetDescendants()) do
 	if part:IsA("BasePart") and part ~= rootPart then
 		part.Anchored = false
@@ -144,7 +150,6 @@ local currentFrame        = 1
 local heightOffset        = 0
 local distance            = DISTANCE
 local pivotOffset         = 0    -- horizontal shift of the rotation pivot (world X)
-local startingAngleOffset = 0
 local captureStarted      = false
 local capturing           = false
 
@@ -160,7 +165,7 @@ local function setFrame(i)
 	backdrop.CFrame = CFrame.lookAt(lookAt + ((lookAt - camPos).Unit * 500), camPos)
 
 	if not captureStarted then
-		local side = startingAngleOffset == 0 and "Front" or "Back"
+		local side = math.abs(startingAngleOffset - getFrontAngle()) < 0.01 and "Front" or "Back"
 		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Zoom: %.1f | Frame %d/%d", side, heightOffset, pivotOffset, distance, i, ROTATIONS)
 		subLabel.Text = "W: flip | E/D: height | A/S: pivot | R/F: zoom | Q: begin capture"
 	else
@@ -212,7 +217,8 @@ setFrame(1)
 
 local keyActions = {
 	[Enum.KeyCode.W] = function()
-		startingAngleOffset = startingAngleOffset == 0 and math.pi or 0
+		local base = getFrontAngle()
+		startingAngleOffset = math.abs(startingAngleOffset - base) < 0.01 and base + math.pi or base
 	end,
 	[Enum.KeyCode.E] = function() heightOffset = math.min(heightOffset + HEIGHT_STEP, HEIGHT_MAX) end,
 	[Enum.KeyCode.D] = function() heightOffset = math.max(heightOffset - HEIGHT_STEP, HEIGHT_MIN) end,
