@@ -8,11 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-
       - name: Cache Go modules
         uses: actions/cache@v5
         with:
@@ -20,11 +18,9 @@ jobs:
             ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev
       - run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-linux-amd64 ./...
       - run: strip bin/pseudo3d-sprites-linux-amd64
-
       - uses: actions/upload-artifact@v7
         with:
           name: linux-binary
@@ -34,11 +30,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-
       - name: Cache Go modules
         uses: actions/cache@v5
         with:
@@ -46,12 +40,10 @@ jobs:
             C:/Users/runneradmin/go/pkg/mod
             C:/Users/runneradmin/AppData/Local/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-
       - shell: pwsh
         run: |
           $env:CGO_ENABLED = "1"; $env:GOOS = "windows"; $env:GOARCH = "amd64"
           go build -ldflags "-s -w" -o bin/pseudo3d-sprites-windows-amd64.exe ./...
-
       - uses: actions/upload-artifact@v7
         with:
           name: windows-binary
@@ -61,11 +53,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-
       - name: Cache Go modules
         uses: actions/cache@v5
         with:
@@ -73,12 +63,10 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-
       - run: |
           CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-macos-amd64 ./...
           CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-macos-arm64 ./...
           strip bin/pseudo3d-sprites-macos-amd64 bin/pseudo3d-sprites-macos-arm64
-
       - uses: actions/upload-artifact@v7
         with:
           name: macos-binary
@@ -90,19 +78,57 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v6
       - uses: actions/download-artifact@v8
         with:
-          path: bin
+          path: artifacts
           merge-multiple: true
 
-      - name: Flatten artifacts
+      - name: Prepare release archives
         run: |
-          mkdir -p release
-          find bin -type f -exec cp {} release/ \;
+          mkdir -p release-linux release-windows release-macos-amd64 release-macos-arm64
+          for folder in release-linux release-windows release-macos-amd64 release-macos-arm64; do
+            mkdir -p $folder/archive
+            mkdir -p $folder/process
+          done
+
+          cp artifacts/pseudo3d-sprites-linux-amd64 release-linux/
+          cp main.luau README.md release-linux/
+
+          cp artifacts/pseudo3d-sprites-windows-amd64.exe release-windows/
+          cp main.luau README.md release-windows/
+
+          cp artifacts/pseudo3d-sprites-macos-amd64 release-macos-amd64/
+          cp main.luau README.md release-macos-amd64/
+
+          cp artifacts/pseudo3d-sprites-macos-arm64 release-macos-arm64/
+          cp main.luau README.md release-macos-arm64/
+
+      - name: Package archives
+        run: |
+          cd release-linux
+          tar -cJf ../pseudo3d-sprites-linux-amd64.tar.xz *
+          cd ..
+
+          cd release-windows
+          zip -r ../pseudo3d-sprites-windows-amd64.zip *
+          cd ..
+
+          cd release-macos-amd64
+          zip -r ../pseudo3d-sprites-macos-amd64.zip *
+          cd ..
+
+          cd release-macos-arm64
+          zip -r ../pseudo3d-sprites-macos-arm64.zip *
+          cd ..
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          files: release/*
+          files: |
+            pseudo3d-sprites-linux-amd64.tar.xz
+            pseudo3d-sprites-windows-amd64.zip
+            pseudo3d-sprites-macos-amd64.zip
+            pseudo3d-sprites-macos-arm64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
