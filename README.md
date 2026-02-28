@@ -10,9 +10,9 @@ The archives available for downloads are:
 
 ## Setting Up the Toolset
 
-1. Open the folder in your file explorer, and you will see a "Main.rbxmx" file.
+1. Open the folder in your file explorer, and you will see a "pseudo3d-create.rbxmx" file.
 2. Drag and drop that file into your Roblox Studio.
-3. Head to the explorer window, and move the newly added "Main" into `StarterPlayer` > `StarterPlayerScripts`.
+3. Head to the explorer window, and move the newly added "pseudo3d-create" into `StarterPlayer` > `StarterPlayerScripts`.
 
 ## Capturing the Frames
 
@@ -82,7 +82,7 @@ Here is a full list of available flags:
 | `-in` | `./process` | Input directory containing your PNG frames. |
 | `-out` | `spritesheet.png` | Output filename for the final spritesheet. |
 | `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
-| `-color-bg` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your "Main" `LocalScript`). |
+| `-color-bg` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your "pseudo3d-create" `LocalScript`). |
 | `-skip-prescale` | `false` | Prescale preview images to make the UI perform better; the original files are still used for processing. |
 
 *You can also access the above list by running the executable with the `-help` (`-h`) flag.*
