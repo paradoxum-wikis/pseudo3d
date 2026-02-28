@@ -15,7 +15,7 @@ var (
 	outputFile    string
 	erodeEdges    bool
 	hexColor      string
-	prescale      bool
+	skipPrescale  bool
 )
 
 const previewMaxPx = 1024 // max dimension for -prescale

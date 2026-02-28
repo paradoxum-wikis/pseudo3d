@@ -27,7 +27,7 @@ func init() {
 	flag.StringVar(&outputFile, "out", "spritesheet.png", "Output spritesheet filename")
 	flag.BoolVar(&erodeEdges, "erode", false, "Aggressively trim 1 pixel of alpha from edges to kill residue")
 	flag.StringVar(&hexColor, "color-bg", "DF03DF", "Hex color code to remove as background")
-	flag.BoolVar(&prescale, "skip-prescale", false, "Prescale preview images to "+fmt.Sprintf("%d", previewMaxPx)+"px max for faster UI (originals are still used for processing)")
+	flag.BoolVar(&skipPrescale, "skip-prescale", false, "Prescale preview images to "+fmt.Sprintf("%d", previewMaxPx)+"px max for faster UI (originals are still used for processing)")
 }
 
 func main() {
@@ -55,7 +55,7 @@ func main() {
 	w := a.NewWindow("Safe Zone Selector")
 	w.Resize(fyne.NewSize(900, 700))
 
-	if !prescale {
+	if !skipPrescale {
 		fmt.Printf("Preloading %d frames (prescaled to max %dpx)...\n", len(files), previewMaxPx)
 	} else {
 		fmt.Printf("Preloading %d frames (full resolution)...\n", len(files))
@@ -71,7 +71,7 @@ func main() {
 			b := full.Bounds()
 			naturalSizes[i] = image.Pt(b.Dx(), b.Dy())
 
-			if prescale {
+			if !skipPrescale {
 				previewImages[i] = imaging.Fit(full, previewMaxPx, previewMaxPx, imaging.Lanczos)
 			} else {
 				previewImages[i] = full
