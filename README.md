@@ -62,13 +62,13 @@ For advanced users, there are some additional options you can configure to custo
 Let's say, if you've already configured your safe zone and just want to re-run the batch processing without opening the web UI again, maybe because the previous run wasn't up to your liking, you can use the `-process` flag:
 
 ```
-pseudo3d-sprites-windows-amd64.exe -skip-ui
+pseudo3d-sprites.exe -skip-ui
 ```
 
 Or, maybe you want to limit the output size of each frame to 256×256 and increase the background removal to be more aggressive. You can run:
 
 ```
-pseudo3d-sprites-windows-amd64.exe -size 256 -threshold-bg 80
+pseudo3d-sprites.exe -size 256 -threshold-bg 80
 ```
 
 Here is a full list of available flags:

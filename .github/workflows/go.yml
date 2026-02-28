@@ -19,8 +19,8 @@ jobs:
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev
-      - run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-linux-amd64 ./...
-      - run: strip bin/pseudo3d-sprites-linux-amd64
+      - run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites ./...
+      - run: strip bin/pseudo3d-sprites
       - uses: actions/upload-artifact@v7
         with:
           name: linux-binary
@@ -43,7 +43,7 @@ jobs:
       - shell: pwsh
         run: |
           $env:CGO_ENABLED = "1"; $env:GOOS = "windows"; $env:GOARCH = "amd64"
-          go build -ldflags "-s -w" -o bin/pseudo3d-sprites-windows-amd64.exe ./...
+          go build -ldflags "-s -w" -o bin/pseudo3d-sprites.exe ./...
       - uses: actions/upload-artifact@v7
         with:
           name: windows-binary
@@ -64,9 +64,9 @@ jobs:
             ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - run: |
-          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-macos-amd64 ./...
-          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-macos-arm64 ./...
-          strip bin/pseudo3d-sprites-macos-amd64 bin/pseudo3d-sprites-macos-arm64
+          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-amd64 ./...
+          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-arm64 ./...
+          strip bin/pseudo3d-sprites-amd64 bin/pseudo3d-sprites-arm64
       - uses: actions/upload-artifact@v7
         with:
           name: macos-binary
@@ -92,10 +92,10 @@ jobs:
             mkdir -p $folder/process
           done
 
-          cp artifacts/pseudo3d-sprites-linux-amd64 release-linux/
-          cp artifacts/pseudo3d-sprites-windows-amd64.exe release-windows/
-          cp artifacts/pseudo3d-sprites-macos-amd64 release-macos-amd64/
-          cp artifacts/pseudo3d-sprites-macos-arm64 release-macos-arm64/
+          cp artifacts/pseudo3d-sprites release-linux/pseudo3d-sprites
+          cp artifacts/pseudo3d-sprites.exe release-windows/pseudo3d-sprites.exe
+          cp artifacts/pseudo3d-sprites-amd64 release-macos-amd64/pseudo3d-sprites
+          cp artifacts/pseudo3d-sprites-arm64 release-macos-arm64/pseudo3d-sprites
 
           cp README.md release-linux/
           cp README.md release-windows/
@@ -117,9 +117,7 @@ jobs:
               <Item class="LocalScript" referent="RBX1">
                 <Properties>
                   <string name="Name">Main</string>
-                  <ProtectedString name="Source"><![CDATA[
-          $(cat main.luau)
-          ]]></ProtectedString>
+                  <ProtectedString name="Source"><![CDATA[$(cat main.luau)]]></ProtectedString>
                 </Properties>
               </Item>
             </Item>
