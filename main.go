@@ -6,6 +6,7 @@ import (
 	"image"
 	"log"
 	"math"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -45,7 +46,9 @@ func main() {
 
 	files, err := getPNGFiles(inputDir)
 	if err != nil || len(files) == 0 {
-		log.Fatalf("No PNG files found in %s", inputDir)
+		fmt.Printf("No PNG files found in %s\n", inputDir)
+		time.Sleep(3 * time.Second)
+		return
 	}
 
 	a := app.New()
