@@ -110,16 +110,11 @@ jobs:
           <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
             <External>null</External>
             <External>nil</External>
-            <Item class="StarterCharacterScripts" referent="RBX0">
+            <Item class="LocalScript" referent="RBX0">
               <Properties>
-                <string name="Name">StarterCharacterScripts</string>
+                <string name="Name">Main</string>
+                <ProtectedString name="Source"><![CDATA[$(cat main.luau)]]></ProtectedString>
               </Properties>
-              <Item class="LocalScript" referent="RBX1">
-                <Properties>
-                  <string name="Name">Main</string>
-                  <ProtectedString name="Source"><![CDATA[$(cat main.luau)]]></ProtectedString>
-                </Properties>
-              </Item>
             </Item>
           </roblox>
           EOF
