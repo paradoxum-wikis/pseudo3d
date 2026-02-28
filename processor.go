@@ -10,7 +10,6 @@ import (
 	"image/draw"
 	"image/png"
 	"log"
-	"math"
 	"os"
 	"strings"
 
@@ -127,9 +126,10 @@ func chromaKeyRemove(img image.Image) image.Image {
 }
 
 func colorDiff(c1, c2 color.RGBA) float64 {
-	return math.Sqrt(math.Pow(float64(c1.R)-float64(c2.R), 2) +
-		math.Pow(float64(c1.G)-float64(c2.G), 2) +
-		math.Pow(float64(c1.B)-float64(c2.B), 2))
+	dr := float64(c1.R) - float64(c2.R)
+	dg := float64(c1.G) - float64(c2.G)
+	db := float64(c1.B) - float64(c2.B)
+	return dr*dr + dg*dg + db*db
 }
 
 func erodeAlpha(img *image.RGBA) *image.RGBA {
