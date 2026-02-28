@@ -1,26 +1,18 @@
 # The Manual
 
-> [!NOTE]
-> I am currently working on a prebuilt version of this project (so no Git, or Go), which will be available for download soon.
->
-> In the meantime, you can follow the instructions below to set up the project on your local machine.
+In order to use this toolset, look at the ["Releases"](https://github.com/paradoxum-wikis/pseudo3d/releases) tab and download the latest build, then extract the archive to a location of your choice.
 
-In order to use this project, you need to have Go, Git (or GitHub Desktop), Roblox Studio, and a browser. Most likely, you already have the latter two, but you may need to install Go and Git.
-
-- You can download Go from the official website: https://golang.org/dl/.
-- For Git, **I recommend using GitHub Desktop**, which provides a beginner-friendly interface. You can download it from: https://desktop.github.com/download/.
-- If you prefer using the command line, you can download Git from the official website: https://git-scm.com/install/.
+The archives available for downloads are:
+ - **pseudo3d-sprites-windows-amd64.zip**: Windows 64-bit.
+ - **pseudo3d-sprites-linux-amd64.tar.xz**: Linux 64-bit.
+ - **pseudo3d-sprites-macos-amd64.zip**: MacOS 64-bit.
+ - **pseudo3d-sprites-macos-arm64.zip**: MacOS Apple Silicon.
 
 ## Setting Up the Toolset
 
-The rest of the setup will assume you are using GitHub Desktop (because otherwise I doubt you'd be reading this):
-
-1. Find the green "Code" button on the top right of the repository page and click it.
-2. Select "Open with GitHub Desktop" from the dropdown menu.
-3. GitHub Desktop will open, just follow the prompts to clone the repository to your local machine.
-4. Once the repository is cloned, open the folder in your file explorer and you will see a "main.luau" file.
-5. Open your Studio, head to the explorer and create a `LocalScript` inside `StarterPlayer` > `StarterPlayerScripts`.
-6. Finally, copy the contents of "main.luau" and paste it into the LocalScript you just created.
+1. Open the folder in your file explorer and you will see a "main.luau" file.
+2. Open your Studio, head to the explorer and create a `LocalScript` inside `StarterPlayer` > `StarterPlayerScripts`.
+3. Finally, copy the contents of "main.luau" and paste it into the LocalScript you just created.
 
 ## Capturing the Frames
 
@@ -48,34 +40,29 @@ Press Q and you can start the capturing process, note that your cursor **will be
 	- Flatpak: `cd ~/.var/app/org.vinegarhq.Vinegar/data/vinegar/studio/prefix/drive_c/users/$USER/AppData/Local/Roblox/tmp-capture-storage`
 	- Native: `cd ~/.local/share/vinegar/studio/prefix/drive_c/users/$USER/AppData/Local/Roblox/tmp-capture-storage`
 
-You will have to move all of the files you've just captured (24 by default) to the "process" folder inside your local repository folder.
+You will have to move all of the files you've just captured (24 by default) to the "process" folder inside your toolset directory.
 
 ## Processing the Frames
 
-After you've captured the frames and moved them into the "process" folder, you can start processing them.
+After you've captured the frames and moved them into the "process" folder, you can start processing them. Simply run the executable file inside the folder, and follow the instructions.
 
-First, make sure you are in the **root directory of the repository** in your terminal, and not inside any folders such as "process" or "archive."
+The UI will show you one of your captured frames, you can slide through them all with the slider below the image. Now, simply draw a square around the area you want to keep, then click "Save." In case a square won't fit the area you want to capture, you can click on the button that says "Square Ratio" to change it to "Freeform."
 
-In your file explorer, you can right click on the folder itself and select "Open in Terminal" (or "Open in Command Prompt", whatever is available). This will open a terminal window with the current directory set to the folder you just right-clicked on.
-
-Type "go run main.go" and press Enter to run the Go program. This will ask you to allow it to access your network, which is required since it is opening a local server so that it can serve you a web UI for selecting the **safe zone** - the region of the frame that will be cropped and used in the final spritesheet. Allow the access, then open http://localhost:7777 in your browser.
-
-The web UI will show you one of your captured frames, you can slide through them all with the slider below the image. Now, simply draw a square around the area you want to keep, then click "Save." In case a square won't fit the area you want to capture, you can click on the button that says "Square Ratio" to change it to "Freeform."
-
-The program will close the web server and immediately begin batch processing all frames in the "process" folder, the progress will be shown in your terminal. Once it's done, you'll find your spritesheet saved as `spritesheet.png` in the root directory of the repository.
+The program will close the UI and immediately begin batch processing all frames in the "process" folder, the progress will be shown in your terminal. Once it's done, you'll find your spritesheet saved as `spritesheet.png` in the root directory of the repository.
 
 ## Flags Reference
+For advanced users, there are some additional options you can configure to customize the processing behavior. These options are passed as flags when running the executable. For example:
 
-You can customize the processing behavior by passing flags to the `go run main.go` command. For example:
-
-```
-go run main.go -size 256 -threshold 80
-```
-
-If you've already configured your safe zone and just want to re-run the batch processing without opening the web UI again, maybe because the previous run wasn't up to your liking, you can use the `-process` flag:
+Let's say, if you've already configured your safe zone and just want to re-run the batch processing without opening the web UI again, maybe because the previous run wasn't up to your liking, you can use the `-process` flag:
 
 ```
-go run main.go -process
+pseudo3d-sprites-windows-amd64.exe -process
+```
+
+Or, maybe you want to limit the output size of each frame to 256×256 and increase the background removal to be more aggressive, you can run:
+
+```
+pseudo3d-sprites-windows-amd64.exe -size 256 -threshold 80
 ```
 
 Here is a full list of available flags:
@@ -90,3 +77,4 @@ Here is a full list of available flags:
 | `-out` | `spritesheet` | Output filename for the final spritesheet. |
 | `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
 | `-color` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your LocalScript). |
+| `-prescale` | `false` | Downscale preview images to make the UI perform better, the original files are still used for processing. |

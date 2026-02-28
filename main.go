@@ -27,7 +27,7 @@ func init() {
 	flag.StringVar(&outputFile, "out", "spritesheet.png", "Output spritesheet filename")
 	flag.BoolVar(&erodeEdges, "erode", false, "Aggressively trim 1 pixel of alpha from edges to kill residue")
 	flag.StringVar(&hexColor, "color", "DF03DF", "Hex color code to remove as background")
-	flag.BoolVar(&prescale, "prescale", false, "Downscale preview images to "+fmt.Sprintf("%d", previewMaxPx)+"px max for faster UI (coordinates stay accurate; originals used for processing)")
+	flag.BoolVar(&prescale, "prescale", false, "Downscale preview images to "+fmt.Sprintf("%d", previewMaxPx)+"px max for faster UI (originals are still used for processing)")
 }
 
 func main() {
