@@ -55,7 +55,7 @@ func main() {
 	w := a.NewWindow("Safe Zone Selector")
 	w.Resize(fyne.NewSize(900, 700))
 
-	if prescale {
+	if !prescale {
 		fmt.Printf("Preloading %d frames (prescaled to max %dpx)...\n", len(files), previewMaxPx)
 	} else {
 		fmt.Printf("Preloading %d frames (full resolution)...\n", len(files))
