@@ -93,16 +93,39 @@ jobs:
           done
 
           cp artifacts/pseudo3d-sprites-linux-amd64 release-linux/
-          cp main.luau README.md release-linux/
-
           cp artifacts/pseudo3d-sprites-windows-amd64.exe release-windows/
-          cp main.luau README.md release-windows/
-
           cp artifacts/pseudo3d-sprites-macos-amd64 release-macos-amd64/
-          cp main.luau README.md release-macos-amd64/
-
           cp artifacts/pseudo3d-sprites-macos-arm64 release-macos-arm64/
-          cp main.luau README.md release-macos-arm64/
+
+          cp README.md release-linux/
+          cp README.md release-windows/
+          cp README.md release-macos-amd64/
+          cp README.md release-macos-arm64/
+
+      - name: Generate RBXMX from Luau
+        run: |
+          for folder in release-linux release-windows release-macos-amd64 release-macos-arm64; do
+            cat > "$folder/Main.rbxmx" <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+            <External>null</External>
+            <External>nil</External>
+            <Item class="StarterCharacterScripts" referent="RBX0">
+              <Properties>
+                <string name="Name">StarterCharacterScripts</string>
+              </Properties>
+              <Item class="LocalScript" referent="RBX1">
+                <Properties>
+                  <string name="Name">Main</string>
+                  <ProtectedString name="Source"><![CDATA[
+          $(cat main.luau)
+          ]]></ProtectedString>
+                </Properties>
+              </Item>
+            </Item>
+          </roblox>
+          EOF
+          done
 
       - name: Package archives
         run: |

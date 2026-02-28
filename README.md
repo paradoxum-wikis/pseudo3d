@@ -10,9 +10,9 @@ The archives available for downloads are:
 
 ## Setting Up the Toolset
 
-1. Open the folder in your file explorer, and you will see a `main.luau` file.
-2. Open your Studio, head to the explorer window, and create a `LocalScript` inside `StarterPlayer` > `StarterPlayerScripts`.
-3. Finally, copy the contents of `main.luau` and paste it into the LocalScript you just created.
+1. Open the folder in your file explorer, and you will see a `Main.rbxmx` file.
+2. Drag and drop that file into your Roblox Studio.
+3. Head to the explorer window, and move the newly added `Main` into `StarterPlayer` > `StarterPlayerScripts`.
 
 ## Capturing the Frames
 
