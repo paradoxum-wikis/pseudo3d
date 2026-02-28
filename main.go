@@ -19,15 +19,15 @@ import (
 )
 
 func init() {
-	flag.BoolVar(&processMode, "process", false, "Skip UI and directly run batch processing")
+	flag.BoolVar(&processMode, "skip-ui", false, "Skip UI and directly run batch processing")
 	flag.IntVar(&targetSize, "size", 512, "Output size of the square frames (for example, 300 for 300x300)")
-	flag.BoolVar(&skipBgRemoval, "no-bg", false, "Skip chroma key background removal completely")
-	flag.Float64Var(&threshold, "threshold", 70.0, "Tolerance threshold for background removal (higher = more aggressive)")
+	flag.BoolVar(&skipBgRemoval, "skip-bg", false, "Skip chroma key background removal completely")
+	flag.Float64Var(&threshold, "threshold-bg", 70.0, "Tolerance threshold for background removal (higher = more aggressive)")
 	flag.StringVar(&inputDir, "in", "./process", "Input directory containing PNG frames")
 	flag.StringVar(&outputFile, "out", "spritesheet.png", "Output spritesheet filename")
 	flag.BoolVar(&erodeEdges, "erode", false, "Aggressively trim 1 pixel of alpha from edges to kill residue")
-	flag.StringVar(&hexColor, "color", "DF03DF", "Hex color code to remove as background")
-	flag.BoolVar(&prescale, "prescale", false, "Downscale preview images to "+fmt.Sprintf("%d", previewMaxPx)+"px max for faster UI (originals are still used for processing)")
+	flag.StringVar(&hexColor, "color-bg", "DF03DF", "Hex color code to remove as background")
+	flag.BoolVar(&prescale, "skip-prescale", false, "Prescale preview images to "+fmt.Sprintf("%d", previewMaxPx)+"px max for faster UI (originals are still used for processing)")
 }
 
 func main() {

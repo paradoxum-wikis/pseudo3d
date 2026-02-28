@@ -46,35 +46,41 @@ You will have to move all of the files you've just captured (24 by default) to t
 
 After you've captured the frames and moved them into the "process" folder, you can start processing them. Simply run the executable file inside the folder, and follow the instructions.
 
+> ![NOTE]
+> The program run may be flagged by Windows SmartScreen for not having a verified publisher, this is a false positive as I do not have the resources to get a code signing certificate.
+>
+> If it was actually malware, Windows Defender would have blocked the file instead of showing a warning, besides, the source code is open and you can verify that yourself.
+
 The UI will show you one of your captured frames, you can slide through them all with the slider below the image. Now, simply draw a square around the area you want to keep, then click "Save." In case a square won't fit the area you want to capture, you can click on the button that says "Square Ratio" to change it to "Freeform."
 
 The program will close the UI and immediately begin batch processing all frames in the "process" folder, the progress will be shown in your terminal. Once it's done, you'll find your spritesheet saved as `spritesheet.png` in the root directory of the repository.
 
 ## Flags Reference
+
 For advanced users, there are some additional options you can configure to customize the processing behavior. These options are passed as flags when running the executable. For example:
 
 Let's say, if you've already configured your safe zone and just want to re-run the batch processing without opening the web UI again, maybe because the previous run wasn't up to your liking, you can use the `-process` flag:
 
 ```
-pseudo3d-sprites-windows-amd64.exe -process
+pseudo3d-sprites-windows-amd64.exe -skip-ui
 ```
 
 Or, maybe you want to limit the output size of each frame to 256×256 and increase the background removal to be more aggressive, you can run:
 
 ```
-pseudo3d-sprites-windows-amd64.exe -size 256 -threshold 80
+pseudo3d-sprites-windows-amd64.exe -size 256 -threshold-bg 80
 ```
 
 Here is a full list of available flags:
 
 | Flag | Default | Description |
 |---|---|---|
-| `-process` | `false` | Skip the web UI and run batch processing directly using the saved safe zone. |
+| `-skip-ui` | `false` | Skip the web UI and run batch processing directly using the saved safe zone. |
 | `-size` | `512` | Output size of each square frame in pixels (e.g. `300` for 300×300). |
-| `-no-bg` | `false` | Skip chroma key background removal entirely. |
-| `-threshold` | `70.0` | Tolerance for background removal (higher values are more aggressive). |
+| `-skip-bg` | `false` | Skip chroma key background removal entirely. |
+| `-threshold-bg` | `70.0` | Tolerance for background removal (higher values are more aggressive). |
 | `-in` | `./process` | Input directory containing your PNG frames. |
-| `-out` | `spritesheet` | Output filename for the final spritesheet. |
+| `-out` | `spritesheet.png` | Output filename for the final spritesheet. |
 | `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
-| `-color` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your LocalScript). |
-| `-prescale` | `false` | Downscale preview images to make the UI perform better, the original files are still used for processing. |
+| `-color-bg` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your LocalScript). |
+| `-skip-prescale` | `false` | Prescale preview images to make the UI perform better, the original files are still used for processing. |
