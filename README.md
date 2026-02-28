@@ -29,7 +29,7 @@ Target (Model)
 
 You can run the game now (F5), and the toolset will automatically angle your camera and whatnot. There are control guides at the top of your screen to help you as well.
 
-There are also more configurations you can change inside your `LocalScript`, such as the backdrop color, etc., but for most, if not all, use cases on our wikis, it isn't necessary to change any of those.
+There are also more configurations you can change inside your "pseudo3d-create" `LocalScript`, such as the backdrop color, etc., but for most, if not all, use cases on our wikis, it isn't necessary to change any of those.
 
 Press Q and you can start the capturing process. Note that your cursor **will be hidden**, so you will have to estimate where your cursor is when you want to click "Save."
 
@@ -76,13 +76,13 @@ Here is a full list of available flags:
 | Flag | Default | Description |
 |---|---|---|
 | `-skip-ui` | `false` | Skip the UI and run batch processing directly using the saved safe zone. |
-| `-size` | `512` | Output size of each square frame in pixels (e.g., `300` for 300×300). |
+| `-size` | `512` | Output size of each square frame in pixels; e.g., `300` for 300×300. |
 | `-skip-bg` | `false` | Skip chroma key background removal entirely. |
-| `-threshold-bg` | `70.0` | Tolerance for background removal (higher values are more aggressive). |
+| `-threshold-bg` | `70.0` | Tolerance for background removal; higher values are more aggressive. |
 | `-in` | `./process` | Input directory containing your PNG frames. |
 | `-out` | `spritesheet.png` | Output filename for the final spritesheet. |
 | `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
-| `-color-bg` | `DF03DF` | Hex color to remove as the background (should match `BACKDROP_COLOR` in your "pseudo3d-create" `LocalScript`). |
+| `-color-bg` | `DF03DF` | Hex color to remove as the background; should match `BACKDROP_COLOR` in your "pseudo3d-create" `LocalScript`. |
 | `-skip-prescale` | `false` | Prescale preview images to make the UI perform better; the original files are still used for processing. |
 
 *You can also access the above list by running the executable with the `-help` (`-h`) flag.*
