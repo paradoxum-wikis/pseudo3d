@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/disintegration/imaging"
 	"github.com/schollz/progressbar/v3"
@@ -107,6 +108,7 @@ func runBatchProcessing() {
 	}
 
 	fmt.Printf("\nHeeho! Spritesheet saved as %s (%d frames)\n", outputFile, len(frames))
+	time.Sleep(3 * time.Second)
 }
 
 func chromaKeyRemove(img image.Image) image.Image {
