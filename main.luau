@@ -145,6 +145,22 @@ local bgFrame = Instance.new("Frame", surfaceGui)
 bgFrame.Size = UDim2.fromScale(1, 1)
 bgFrame.BackgroundColor3 = BACKDROP_COLOR
 
+local pivotIndicator = Instance.new("Part", workspace)
+pivotIndicator.Size = Vector3.new(0.1, 0.1, 0.1)
+pivotIndicator.Anchored = true
+pivotIndicator.CanCollide = false
+pivotIndicator.Transparency = 1
+
+local pivotBillboard = Instance.new("BillboardGui", pivotIndicator)
+pivotBillboard.AlwaysOnTop = true
+pivotBillboard.Size = UDim2.fromOffset(16, 16)
+pivotBillboard.Enabled = false
+
+local pivotDot = Instance.new("Frame", pivotBillboard)
+pivotDot.Size = UDim2.fromScale(1, 1)
+pivotDot.BackgroundColor3 = Color3.new(1, 1, 0)
+Instance.new("UICorner", pivotDot).CornerRadius = UDim.new(1, 0)
+
 local cam = workspace.CurrentCamera
 cam.CameraType = Enum.CameraType.Scriptable
 cam.FieldOfView = fov
@@ -152,8 +168,9 @@ cam.FieldOfView = fov
 local currentFrame        = 1
 local heightOffset        = 0
 local distance            = DISTANCE
-local pivotOffset         = 0    -- horizontal shift of the rotation pivot (world X)
+local pivotOffset         = 0    -- horizontal shift of the rotation pivot
 local depthOffset         = 0    -- forward/back shift of the rotation pivot
+local showPivot           = false
 local previewing          = false
 local previewConnection   = nil
 local captureStarted      = false
@@ -171,11 +188,12 @@ local function setFrame(i)
 	local camPos = lookAt + Vector3.new(math.sin(angle) * distance, 0, math.cos(angle) * distance)
 	cam.CFrame   = CFrame.lookAt(camPos, lookAt)
 	backdrop.CFrame = CFrame.lookAt(lookAt + ((lookAt - camPos).Unit * 500), camPos)
+	pivotIndicator.CFrame = CFrame.new(lookAt)
 
 	if not captureStarted then
 		local side = math.abs(startingAngleOffset - getFrontAngle()) < 0.01 and "Front" or "Back"
 		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d", side, heightOffset, pivotOffset, depthOffset, distance, i, ROTATIONS)
-		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | P: preview | Q: begin capture"
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | O: pivot point | P: preview | Q: begin capture"
 	else
 		label.Text = string.format("Capturing frame %d / %d  -  Height: %+.1f  Pivot: %+.1f  Depth: %+.1f", i, ROTATIONS, heightOffset, pivotOffset, depthOffset)
 		subLabel.Text = ""
@@ -211,6 +229,7 @@ local function captureNext()
 
 	label.Visible = false
 	subLabel.Visible = false
+	pivotBillboard.Enabled = false
 	UIS.MouseIconEnabled = false
 	RunService.RenderStepped:Wait()
 	RunService.RenderStepped:Wait()
@@ -228,6 +247,7 @@ local function captureNext()
 				UIS.MouseIconEnabled = true
 				label.Visible = true
 				subLabel.Visible = true
+				pivotBillboard.Enabled = showPivot
 				capturing = false
 				captureNext()
 			else
@@ -235,6 +255,7 @@ local function captureNext()
 				UIS.MouseIconEnabled = true
 				label.Visible = true
 				subLabel.Visible = true
+				pivotBillboard.Enabled = showPivot
 				label.Text = "Heeho! All frames captured!"
 				subLabel.Text = ""
 				print("Heeho! All frames captured!")
@@ -255,10 +276,14 @@ local keyActions = {
 	[Enum.KeyCode.D] = function() heightOffset = math.max(heightOffset - HEIGHT_STEP, HEIGHT_MIN) end,
 	[Enum.KeyCode.A] = function() pivotOffset  = math.max(pivotOffset  - PIVOT_STEP,  PIVOT_MIN)  end,
 	[Enum.KeyCode.S] = function() pivotOffset  = math.min(pivotOffset  + PIVOT_STEP,  PIVOT_MAX)  end,
-	[Enum.KeyCode.Z] = function() depthOffset  = math.max(depthOffset - PIVOT_STEP, DEPTH_MIN) end,
-	[Enum.KeyCode.X] = function() depthOffset  = math.min(depthOffset + PIVOT_STEP, DEPTH_MAX) end,
+	[Enum.KeyCode.Z] = function() depthOffset  = math.max(depthOffset  - PIVOT_STEP,  DEPTH_MIN)  end,
+	[Enum.KeyCode.X] = function() depthOffset  = math.min(depthOffset  + PIVOT_STEP,  DEPTH_MAX)  end,
 	[Enum.KeyCode.R] = function() distance     = math.max(distance     - ZOOM_STEP,   ZOOM_MIN)   end,
 	[Enum.KeyCode.F] = function() distance     = math.min(distance     + ZOOM_STEP,   ZOOM_MAX)   end,
+	[Enum.KeyCode.O] = function()
+		showPivot = not showPivot
+		pivotBillboard.Enabled = showPivot
+	end,
 	[Enum.KeyCode.P] = function()
 		if previewing then stopPreview() else startPreview() end
 	end,
