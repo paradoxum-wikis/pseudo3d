@@ -14,6 +14,8 @@ local HEIGHT_MAX      = 10       			-- highest the camera can go (relative to mo
 local PIVOT_STEP      = .1      			-- units moved per A/S press
 local PIVOT_MIN       = -10      			-- leftmost pivot shift allowed
 local PIVOT_MAX       = 10       			-- rightmost pivot shift allowed
+local DEPTH_MIN       = -10      			-- furthest depth shift allowed
+local DEPTH_MAX       = 10       			-- nearest depth shift allowed
 local ZOOM_STEP       = .1        			-- units moved per R/F press
 local ZOOM_MIN        = 2        			-- closest the camera can get
 local ZOOM_MAX        = 50       			-- furthest the camera can get
@@ -151,14 +153,16 @@ local currentFrame        = 1
 local heightOffset        = 0
 local distance            = DISTANCE
 local pivotOffset         = 0    -- horizontal shift of the rotation pivot (world X)
+local depthOffset         = 0    -- forward/back shift of the rotation pivot
 local previewing          = false
 local previewConnection   = nil
 local captureStarted      = false
 local capturing           = false
 
 local function getLookAt()
-	local right = Vector3.new(math.cos(startingAngleOffset), 0, -math.sin(startingAngleOffset))
-	return modelCenter + right * pivotOffset + Vector3.new(0, heightOffset, 0)
+	local right   = Vector3.new(math.cos(startingAngleOffset), 0, -math.sin(startingAngleOffset))
+	local forward = Vector3.new(math.sin(startingAngleOffset), 0,  math.cos(startingAngleOffset))
+	return modelCenter + right * pivotOffset + forward * depthOffset + Vector3.new(0, heightOffset, 0)
 end
 
 local function setFrame(i)
@@ -170,10 +174,10 @@ local function setFrame(i)
 
 	if not captureStarted then
 		local side = math.abs(startingAngleOffset - getFrontAngle()) < 0.01 and "Front" or "Back"
-		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Zoom: %.1f | Frame %d/%d", side, heightOffset, pivotOffset, distance, i, ROTATIONS)
-		subLabel.Text = "W: flip | E/D: height | A/S: pivot | R/F: zoom | P: preview | Q: begin capture"
+		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d", side, heightOffset, pivotOffset, depthOffset, distance, i, ROTATIONS)
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | P: preview | Q: begin capture"
 	else
-		label.Text = string.format("Capturing frame %d / %d  -  Height: %+.1f  Pivot: %+.1f", i, ROTATIONS, heightOffset, pivotOffset)
+		label.Text = string.format("Capturing frame %d / %d  -  Height: %+.1f  Pivot: %+.1f  Depth: %+.1f", i, ROTATIONS, heightOffset, pivotOffset, depthOffset)
 		subLabel.Text = ""
 	end
 end
@@ -251,6 +255,8 @@ local keyActions = {
 	[Enum.KeyCode.D] = function() heightOffset = math.max(heightOffset - HEIGHT_STEP, HEIGHT_MIN) end,
 	[Enum.KeyCode.A] = function() pivotOffset  = math.max(pivotOffset  - PIVOT_STEP,  PIVOT_MIN)  end,
 	[Enum.KeyCode.S] = function() pivotOffset  = math.min(pivotOffset  + PIVOT_STEP,  PIVOT_MAX)  end,
+	[Enum.KeyCode.Z] = function() depthOffset  = math.max(depthOffset - PIVOT_STEP, DEPTH_MIN) end,
+	[Enum.KeyCode.X] = function() depthOffset  = math.min(depthOffset + PIVOT_STEP, DEPTH_MAX) end,
 	[Enum.KeyCode.R] = function() distance     = math.max(distance     - ZOOM_STEP,   ZOOM_MIN)   end,
 	[Enum.KeyCode.F] = function() distance     = math.min(distance     + ZOOM_STEP,   ZOOM_MAX)   end,
 	[Enum.KeyCode.P] = function()
