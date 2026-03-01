@@ -114,15 +114,77 @@ func runBatchProcessing() {
 func chromaKeyRemove(img image.Image) image.Image {
 	bounds := img.Bounds()
 	newImg := image.NewRGBA(bounds)
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			c := color.RGBAModel.Convert(img.At(x, y)).(color.RGBA)
-			if colorDiff(c, chromaKey) < threshold {
-				newImg.Set(x, y, color.Transparent)
-			} else {
-				newImg.Set(x, y, c)
+
+	switch src := img.(type) {
+	case *image.RGBA:
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			i := src.PixOffset(bounds.Min.X, y)
+			j := newImg.PixOffset(bounds.Min.X, y)
+			for x := bounds.Min.X; x < bounds.Max.X; x++ {
+				c := color.RGBA{R: src.Pix[i], G: src.Pix[i+1], B: src.Pix[i+2], A: src.Pix[i+3]}
+				if colorDiff(c, chromaKey) < threshold {
+					newImg.Pix[j] = 0
+					newImg.Pix[j+1] = 0
+					newImg.Pix[j+2] = 0
+					newImg.Pix[j+3] = 0
+				} else {
+					newImg.Pix[j] = c.R
+					newImg.Pix[j+1] = c.G
+					newImg.Pix[j+2] = c.B
+					newImg.Pix[j+3] = c.A
+				}
+				i += 4
+				j += 4
 			}
 		}
+	case *image.NRGBA:
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			i := src.PixOffset(bounds.Min.X, y)
+			j := newImg.PixOffset(bounds.Min.X, y)
+			for x := bounds.Min.X; x < bounds.Max.X; x++ {
+				a := src.Pix[i+3]
+				var c color.RGBA
+				switch a {
+				case 0xff:
+					c = color.RGBA{R: src.Pix[i], G: src.Pix[i+1], B: src.Pix[i+2], A: 0xff}
+				case 0:
+					c = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+				default:
+					r := uint32(src.Pix[i])
+					r |= r << 8
+					r *= uint32(a)
+					r /= 0xff
+
+					g := uint32(src.Pix[i+1])
+					g |= g << 8
+					g *= uint32(a)
+					g /= 0xff
+
+					b := uint32(src.Pix[i+2])
+					b |= b << 8
+					b *= uint32(a)
+					b /= 0xff
+
+					c = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: a}
+				}
+
+				if colorDiff(c, chromaKey) < threshold {
+					newImg.Pix[j] = 0
+					newImg.Pix[j+1] = 0
+					newImg.Pix[j+2] = 0
+					newImg.Pix[j+3] = 0
+				} else {
+					newImg.Pix[j] = c.R
+					newImg.Pix[j+1] = c.G
+					newImg.Pix[j+2] = c.B
+					newImg.Pix[j+3] = c.A
+				}
+				i += 4
+				j += 4
+			}
+		}
+	default:
+		panic(fmt.Sprintf("Unsupported image type: %T", img))
 	}
 	return newImg
 }
