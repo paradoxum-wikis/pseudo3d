@@ -59,7 +59,7 @@ The program will close the UI and immediately begin batch processing all frames 
 
 For advanced users, there are some additional options you can configure to customize the processing behavior. These options are passed as flags when running the executable through a terminal. For example:
 
-Let's say, if you've already configured your safe zone and just want to re-run the batch processing without opening the web UI again, maybe because the previous run wasn't up to your liking, you can use the `-process` flag:
+Let's say, if you've already configured your safe zone and just want to re-run the batch processing without opening the UI again, maybe because the previous run wasn't up to your liking, you can use the `-process` flag:
 
 ```
 pseudo3d-sprites.exe -skip-ui
