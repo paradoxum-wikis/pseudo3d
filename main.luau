@@ -21,6 +21,7 @@ local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
 local FLAT_LIGHTING   = true     			-- set false to keep your scene lighting as is
 local BLOOM_INTENSITY = 0					-- set to nil to leave bloom as is
 local CLEAR_WORKSPACE = true				-- remove everything in workspace except Target model
+local PREVIEW_FPS     = 10					-- frames per second during preview rotation
 
 local player = Players.LocalPlayer
 for _, gui in ipairs(player.PlayerGui:GetChildren()) do
@@ -150,6 +151,8 @@ local currentFrame        = 1
 local heightOffset        = 0
 local distance            = DISTANCE
 local pivotOffset         = 0    -- horizontal shift of the rotation pivot (world X)
+local previewing          = false
+local previewConnection   = nil
 local captureStarted      = false
 local capturing           = false
 
@@ -167,11 +170,34 @@ local function setFrame(i)
 	if not captureStarted then
 		local side = math.abs(startingAngleOffset - getFrontAngle()) < 0.01 and "Front" or "Back"
 		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Zoom: %.1f | Frame %d/%d", side, heightOffset, pivotOffset, distance, i, ROTATIONS)
-		subLabel.Text = "W: flip | E/D: height | A/S: pivot | R/F: zoom | Q: begin capture"
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot | R/F: zoom | P: preview | Q: begin capture"
 	else
 		label.Text = string.format("Capturing frame %d / %d  -  Height: %+.1f  Pivot: %+.1f", i, ROTATIONS, heightOffset, pivotOffset)
 		subLabel.Text = ""
 	end
+end
+
+local function stopPreview()
+	previewing = false
+	if previewConnection then
+		previewConnection:Disconnect()
+		previewConnection = nil
+	end
+	currentFrame = 1
+	setFrame(currentFrame)
+end
+
+local function startPreview()
+	previewing = true
+	local elapsed = 0
+	previewConnection = RunService.RenderStepped:Connect(function(dt)
+		elapsed += dt
+		if elapsed >= 1 / PREVIEW_FPS then
+			elapsed = 0
+			currentFrame = (currentFrame % ROTATIONS) + 1
+			setFrame(currentFrame)
+		end
+	end)
 end
 
 local function captureNext()
@@ -226,6 +252,9 @@ local keyActions = {
 	[Enum.KeyCode.S] = function() pivotOffset  = math.min(pivotOffset  + PIVOT_STEP,  PIVOT_MAX)  end,
 	[Enum.KeyCode.R] = function() distance     = math.max(distance     - ZOOM_STEP,   ZOOM_MIN)   end,
 	[Enum.KeyCode.F] = function() distance     = math.min(distance     + ZOOM_STEP,   ZOOM_MAX)   end,
+	[Enum.KeyCode.P] = function()
+		if previewing then stopPreview() else startPreview() end
+	end,
 	[Enum.KeyCode.Q] = function()
 		captureStarted = true
 		captureNext()
@@ -234,9 +263,12 @@ local keyActions = {
 
 UIS.InputBegan:Connect(function(input, processed)
 	if captureStarted then return end
+	if previewing and input.KeyCode ~= Enum.KeyCode.P then return end
 	local action = keyActions[input.KeyCode]
 	if action then
 		action()
-		setFrame(currentFrame)
+		if input.KeyCode ~= Enum.KeyCode.P then
+			setFrame(currentFrame)
+		end
 	end
 end)
