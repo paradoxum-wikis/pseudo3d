@@ -50,6 +50,24 @@ subLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
 subLabel.TextSize = 16
 subLabel.Font = Enum.Font.Gotham
 
+local previewLabel = Instance.new("TextLabel", bg)
+previewLabel.Size = UDim2.fromOffset(700, 30)
+previewLabel.Position = UDim2.new(0.5, -350, 0, 16)
+previewLabel.BackgroundTransparency = 1
+previewLabel.TextColor3 = Color3.new(0, 1, 0.5)
+previewLabel.TextSize = 22
+previewLabel.Font = Enum.Font.GothamBold
+previewLabel.Visible = false
+
+local previewSubLabel = Instance.new("TextLabel", bg)
+previewSubLabel.Size = UDim2.fromOffset(700, 24)
+previewSubLabel.Position = UDim2.new(0.5, -350, 0, 44)
+previewSubLabel.BackgroundTransparency = 1
+previewSubLabel.TextColor3 = Color3.new(0.7, 1, 0.8)
+previewSubLabel.TextSize = 16
+previewSubLabel.Font = Enum.Font.Gotham
+previewSubLabel.Visible = false
+
 local model = workspace:WaitForChild("Target", 10)
 if not model then return warn("No 'Target' found in workspace!") end
 
@@ -65,10 +83,11 @@ local rootPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") o
 if rootPart then rootPart.Anchored = true end
 
 local function getFrontAngle()
+	if not rootPart then return 0 end
 	return math.atan2(rootPart.CFrame.LookVector.X, rootPart.CFrame.LookVector.Z)
 end
 
-local startingAngleOffset = rootPart and getFrontAngle() or 0
+local startingAngleOffset = getFrontAngle()
 
 for _, part in ipairs(model:GetDescendants()) do
 	if part:IsA("BasePart") and part ~= rootPart then
@@ -168,18 +187,35 @@ cam.FieldOfView = fov
 local currentFrame        = 1
 local heightOffset        = 0
 local distance            = DISTANCE
-local pivotOffset         = 0    -- horizontal shift of the rotation pivot
-local depthOffset         = 0    -- forward/back shift of the rotation pivot
+local pivotOffset         = 0
+local depthOffset         = 0
 local showPivot           = false
 local previewing          = false
 local previewConnection   = nil
-local captureStarted      = false
 local capturing           = false
+local paused              = false
 
 local function getLookAt()
 	local right   = Vector3.new(math.cos(startingAngleOffset), 0, -math.sin(startingAngleOffset))
 	local forward = Vector3.new(math.sin(startingAngleOffset), 0,  math.cos(startingAngleOffset))
 	return modelCenter + right * pivotOffset + forward * depthOffset + Vector3.new(0, heightOffset, 0)
+end
+
+local function updateUI()
+	if previewing then
+		local statusText = paused and "[PAUSED]" or "[PREVIEWING]"
+		previewLabel.Text = string.format("%s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d",
+			statusText, heightOffset, pivotOffset, depthOffset, distance, currentFrame, ROTATIONS)
+		previewSubLabel.Text = "P: stop preview | Space: pause/resume"
+	else
+		local side = "Front"
+		if rootPart then
+			side = math.abs(startingAngleOffset - getFrontAngle()) < 0.01 and "Front" or "Back"
+		end
+		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d",
+			side, heightOffset, pivotOffset, depthOffset, distance, currentFrame, ROTATIONS)
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | O: pivot point | P: preview | Q: begin capture"
+	end
 end
 
 local function setFrame(i)
@@ -190,18 +226,16 @@ local function setFrame(i)
 	backdrop.CFrame = CFrame.lookAt(lookAt + ((lookAt - camPos).Unit * 500), camPos)
 	pivotIndicator.CFrame = CFrame.new(lookAt)
 
-	if not captureStarted then
-		local side = math.abs(startingAngleOffset - getFrontAngle()) < 0.01 and "Front" or "Back"
-		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d", side, heightOffset, pivotOffset, depthOffset, distance, i, ROTATIONS)
-		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | O: pivot point | P: preview | Q: begin capture"
-	else
-		label.Text = string.format("Capturing frame %d / %d  -  Height: %+.1f  Pivot: %+.1f  Depth: %+.1f", i, ROTATIONS, heightOffset, pivotOffset, depthOffset)
-		subLabel.Text = ""
-	end
+	updateUI()
 end
 
 local function stopPreview()
+	previewLabel.Visible = false
+	previewSubLabel.Visible = false
+	label.Visible = true
+	subLabel.Visible = true
 	previewing = false
+	paused = false
 	if previewConnection then
 		previewConnection:Disconnect()
 		previewConnection = nil
@@ -211,9 +245,14 @@ local function stopPreview()
 end
 
 local function startPreview()
+	label.Visible = false
+	subLabel.Visible = false
+	previewLabel.Visible = true
+	previewSubLabel.Visible = true
 	previewing = true
 	local elapsed = 0
 	previewConnection = RunService.RenderStepped:Connect(function(dt)
+		if paused then return end
 		elapsed += dt
 		if elapsed >= 1 / PREVIEW_FPS then
 			elapsed = 0
@@ -229,9 +268,10 @@ local function captureNext()
 
 	label.Visible = false
 	subLabel.Visible = false
+	previewLabel.Visible = false
+	previewSubLabel.Visible = false
 	pivotBillboard.Enabled = false
 	UIS.MouseIconEnabled = false
-	RunService.RenderStepped:Wait()
 	RunService.RenderStepped:Wait()
 
 	CaptureService:CaptureScreenshot(function(tempContentId)
@@ -243,21 +283,32 @@ local function captureNext()
 				currentFrame += 1
 				setFrame(currentFrame)
 				RunService.RenderStepped:Wait()
-				RunService.RenderStepped:Wait()
 				UIS.MouseIconEnabled = true
-				label.Visible = true
-				subLabel.Visible = true
+
+				if previewing then
+					previewLabel.Visible = true
+					previewSubLabel.Visible = true
+				else
+					label.Visible = true
+					subLabel.Visible = true
+				end
 				pivotBillboard.Enabled = showPivot
 				capturing = false
 				captureNext()
 			else
-				currentFrame += 1
 				UIS.MouseIconEnabled = true
-				label.Visible = true
-				subLabel.Visible = true
+				if previewing then
+					previewLabel.Visible = true
+					previewSubLabel.Visible = true
+					previewLabel.Text = "Heeho! All frames captured!"
+					previewSubLabel.Text = ""
+				else
+					label.Visible = true
+					subLabel.Visible = true
+					label.Text = "Heeho! All frames captured!"
+					subLabel.Text = ""
+				end
 				pivotBillboard.Enabled = showPivot
-				label.Text = "Heeho! All frames captured!"
-				subLabel.Text = ""
 				print("Heeho! All frames captured!")
 				capturing = false
 			end
@@ -285,21 +336,30 @@ local keyActions = {
 		pivotBillboard.Enabled = showPivot
 	end,
 	[Enum.KeyCode.P] = function()
-		if previewing then stopPreview() else startPreview() end
+		if previewing then
+			stopPreview()
+		else
+			startPreview()
+		end
+	end,
+	[Enum.KeyCode.Space] = function()
+		if previewing then
+			paused = not paused
+			setFrame(currentFrame)
+		end
 	end,
 	[Enum.KeyCode.Q] = function()
-		captureStarted = true
 		captureNext()
 	end,
 }
 
 UIS.InputBegan:Connect(function(input, processed)
-	if captureStarted then return end
-	if previewing and input.KeyCode ~= Enum.KeyCode.P then return end
+	if processed then return end
+	if previewing and input.KeyCode ~= Enum.KeyCode.P and input.KeyCode ~= Enum.KeyCode.Space then return end
 	local action = keyActions[input.KeyCode]
 	if action then
 		action()
-		if input.KeyCode ~= Enum.KeyCode.P then
+		if input.KeyCode ~= Enum.KeyCode.P and input.KeyCode ~= Enum.KeyCode.Space then
 			setFrame(currentFrame)
 		end
 	end
