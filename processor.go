@@ -114,6 +114,7 @@ func runBatchProcessing() {
 func chromaKeyRemove(img image.Image) image.Image {
 	bounds := img.Bounds()
 	newImg := image.NewRGBA(bounds)
+	thresh := int32(threshold)
 
 	switch src := img.(type) {
 	case *image.RGBA:
@@ -122,7 +123,7 @@ func chromaKeyRemove(img image.Image) image.Image {
 			j := newImg.PixOffset(bounds.Min.X, y)
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
 				c := color.RGBA{R: src.Pix[i], G: src.Pix[i+1], B: src.Pix[i+2], A: src.Pix[i+3]}
-				if colorDiff(c, chromaKey) < threshold {
+				if colorDiff(c, chromaKey) < thresh {
 					// transparent
 					newImg.Pix[j] = 0
 					newImg.Pix[j+1] = 0
@@ -171,7 +172,7 @@ func chromaKeyRemove(img image.Image) image.Image {
 					c = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: a}
 				}
 
-				if colorDiff(c, chromaKey) < threshold {
+				if colorDiff(c, chromaKey) < thresh {
 					newImg.Pix[j] = 0
 					newImg.Pix[j+1] = 0
 					newImg.Pix[j+2] = 0
@@ -192,10 +193,10 @@ func chromaKeyRemove(img image.Image) image.Image {
 	return newImg
 }
 
-func colorDiff(c1, c2 color.RGBA) float64 {
-	dr := float64(c1.R) - float64(c2.R)
-	dg := float64(c1.G) - float64(c2.G)
-	db := float64(c1.B) - float64(c2.B)
+func colorDiff(c1, c2 color.RGBA) int32 {
+	dr := int32(c1.R) - int32(c2.R)
+	dg := int32(c1.G) - int32(c2.G)
+	db := int32(c1.B) - int32(c2.B)
 	return dr*dr + dg*dg + db*db
 }
 
