@@ -123,6 +123,7 @@ func chromaKeyRemove(img image.Image) image.Image {
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
 				c := color.RGBA{R: src.Pix[i], G: src.Pix[i+1], B: src.Pix[i+2], A: src.Pix[i+3]}
 				if colorDiff(c, chromaKey) < threshold {
+					// transparent
 					newImg.Pix[j] = 0
 					newImg.Pix[j+1] = 0
 					newImg.Pix[j+2] = 0
@@ -138,6 +139,7 @@ func chromaKeyRemove(img image.Image) image.Image {
 			}
 		}
 	case *image.NRGBA:
+		// convert NRGBA -> premultiplied RGBA through math bs
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			i := src.PixOffset(bounds.Min.X, y)
 			j := newImg.PixOffset(bounds.Min.X, y)
@@ -150,6 +152,7 @@ func chromaKeyRemove(img image.Image) image.Image {
 				case 0:
 					c = color.RGBA{R: 0, G: 0, B: 0, A: 0}
 				default:
+					// premultiply RGB by alpha
 					r := uint32(src.Pix[i])
 					r |= r << 8
 					r *= uint32(a)
