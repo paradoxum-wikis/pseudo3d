@@ -122,18 +122,21 @@ func chromaKeyRemove(img image.Image) image.Image {
 			i := src.PixOffset(bounds.Min.X, y)
 			j := newImg.PixOffset(bounds.Min.X, y)
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
-				c := color.RGBA{R: src.Pix[i], G: src.Pix[i+1], B: src.Pix[i+2], A: src.Pix[i+3]}
-				if colorDiff(c, chromaKey) < thresh {
+				r, g, b, a := src.Pix[i], src.Pix[i+1], src.Pix[i+2], src.Pix[i+3]
+				dr := int32(r) - int32(chromaKey.R)
+				dg := int32(g) - int32(chromaKey.G)
+				db := int32(b) - int32(chromaKey.B)
+				if dr*dr+dg*dg+db*db < thresh {
 					// transparent
 					newImg.Pix[j] = 0
 					newImg.Pix[j+1] = 0
 					newImg.Pix[j+2] = 0
 					newImg.Pix[j+3] = 0
 				} else {
-					newImg.Pix[j] = c.R
-					newImg.Pix[j+1] = c.G
-					newImg.Pix[j+2] = c.B
-					newImg.Pix[j+3] = c.A
+					newImg.Pix[j] = r
+					newImg.Pix[j+1] = g
+					newImg.Pix[j+2] = b
+					newImg.Pix[j+3] = a
 				}
 				i += 4
 				j += 4
@@ -146,42 +149,45 @@ func chromaKeyRemove(img image.Image) image.Image {
 			j := newImg.PixOffset(bounds.Min.X, y)
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
 				a := src.Pix[i+3]
-				var c color.RGBA
+				var r, g, b uint8
 				switch a {
 				case 0xff:
-					c = color.RGBA{R: src.Pix[i], G: src.Pix[i+1], B: src.Pix[i+2], A: 0xff}
+					r, g, b = src.Pix[i], src.Pix[i+1], src.Pix[i+2]
 				case 0:
-					c = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+					r, g, b = 0, 0, 0
 				default:
 					// premultiply RGB by alpha
-					r := uint32(src.Pix[i])
-					r |= r << 8
-					r *= uint32(a)
-					r /= 0xff
+					r32 := uint32(src.Pix[i])
+					r32 |= r32 << 8
+					r32 *= uint32(a)
+					r32 /= 0xff
 
-					g := uint32(src.Pix[i+1])
-					g |= g << 8
-					g *= uint32(a)
-					g /= 0xff
+					g32 := uint32(src.Pix[i+1])
+					g32 |= g32 << 8
+					g32 *= uint32(a)
+					g32 /= 0xff
 
-					b := uint32(src.Pix[i+2])
-					b |= b << 8
-					b *= uint32(a)
-					b /= 0xff
+					b32 := uint32(src.Pix[i+2])
+					b32 |= b32 << 8
+					b32 *= uint32(a)
+					b32 /= 0xff
 
-					c = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: a}
+					r, g, b = uint8(r32>>8), uint8(g32>>8), uint8(b32>>8)
 				}
 
-				if colorDiff(c, chromaKey) < thresh {
+				dr := int32(r) - int32(chromaKey.R)
+				dg := int32(g) - int32(chromaKey.G)
+				db := int32(b) - int32(chromaKey.B)
+				if dr*dr+dg*dg+db*db < thresh {
 					newImg.Pix[j] = 0
 					newImg.Pix[j+1] = 0
 					newImg.Pix[j+2] = 0
 					newImg.Pix[j+3] = 0
 				} else {
-					newImg.Pix[j] = c.R
-					newImg.Pix[j+1] = c.G
-					newImg.Pix[j+2] = c.B
-					newImg.Pix[j+3] = c.A
+					newImg.Pix[j] = r
+					newImg.Pix[j+1] = g
+					newImg.Pix[j+2] = b
+					newImg.Pix[j+3] = a
 				}
 				i += 4
 				j += 4
@@ -191,13 +197,6 @@ func chromaKeyRemove(img image.Image) image.Image {
 		panic(fmt.Sprintf("Unsupported image type: %T", img))
 	}
 	return newImg
-}
-
-func colorDiff(c1, c2 color.RGBA) int32 {
-	dr := int32(c1.R) - int32(c2.R)
-	dg := int32(c1.G) - int32(c2.G)
-	db := int32(c1.B) - int32(c2.B)
-	return dr*dr + dg*dg + db*db
 }
 
 func erodeAlpha(img *image.RGBA) *image.RGBA {
