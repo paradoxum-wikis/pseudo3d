@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/disintegration/imaging"
@@ -211,6 +212,12 @@ func main() {
 		}
 	}
 
+	helpBtn := widget.NewButton("?", func() {
+		dialog.ShowInformation("Controls",
+			"Draw a selection by dragging on the image.\n\nArrow keys: nudge selection by 1px\nShift + Arrow keys: nudge by 10px",
+			w)
+	})
+
 	saveBtn := widget.NewButton("Save & Process!", func() {
 		if !overlay.hasSelection || overlay.minX == overlay.maxX {
 			return
@@ -227,7 +234,7 @@ func main() {
 	})
 
 	controls := container.NewVBox(
-		toggleLockBtn,
+		container.NewBorder(nil, nil, nil, helpBtn, toggleLockBtn),
 		container.NewBorder(nil, nil, nil, frameLabel, slider),
 		saveBtn,
 		statusLabel,
