@@ -8,13 +8,13 @@ local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
 --  CONFIGURATION
 local ROTATIONS       = 24					-- number of frames per full rotation
 local DISTANCE        = 12       			-- camera distance from model center
-local HEIGHT_STEP     = .5        			-- units moved per E/D press
+local HEIGHT_STEP     = .1        			-- units moved per E/D press
 local HEIGHT_MIN      = -10      			-- lowest the camera can go (relative to model center)
 local HEIGHT_MAX      = 10       			-- highest the camera can go (relative to model center)
-local PIVOT_STEP      = 0.5      			-- units moved per A/S press
+local PIVOT_STEP      = .1      			-- units moved per A/S press
 local PIVOT_MIN       = -10      			-- leftmost pivot shift allowed
 local PIVOT_MAX       = 10       			-- rightmost pivot shift allowed
-local ZOOM_STEP       = 1        			-- units moved per R/F press
+local ZOOM_STEP       = .1        			-- units moved per R/F press
 local ZOOM_MIN        = 2        			-- closest the camera can get
 local ZOOM_MAX        = 50       			-- furthest the camera can get
 local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
