@@ -157,7 +157,8 @@ local captureStarted      = false
 local capturing           = false
 
 local function getLookAt()
-	return modelCenter + Vector3.new(pivotOffset, heightOffset, 0)
+	local right = Vector3.new(math.cos(startingAngleOffset), 0, -math.sin(startingAngleOffset))
+	return modelCenter + right * pivotOffset + Vector3.new(0, heightOffset, 0)
 end
 
 local function setFrame(i)
