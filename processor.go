@@ -16,6 +16,7 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/schollz/progressbar/v3"
+	"github.com/t7ru/chromakey"
 )
 
 func runBatchProcessing() {
@@ -51,10 +52,10 @@ func runBatchProcessing() {
 		var currentImg image.Image = img
 
 		if !skipBgRemoval {
-			currentImg = chromaKeyRemove(currentImg)
+			currentImg = chromakey.Remove(currentImg, chromaKey, threshold)
 			if erodeEdges {
 				if rgba, ok := currentImg.(*image.RGBA); ok {
-					currentImg = erodeAlpha(rgba)
+					currentImg = chromakey.ErodeAlpha(rgba)
 				}
 			}
 		}
@@ -109,116 +110,4 @@ func runBatchProcessing() {
 
 	fmt.Printf("\nHeeho! Spritesheet saved as %s (%d frames)\n", outputFile, len(frames))
 	time.Sleep(3 * time.Second)
-}
-
-func chromaKeyRemove(img image.Image) image.Image {
-	bounds := img.Bounds()
-	newImg := image.NewRGBA(bounds)
-	thresh := int32(threshold)
-
-	switch src := img.(type) {
-	case *image.RGBA:
-		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			i := src.PixOffset(bounds.Min.X, y)
-			j := newImg.PixOffset(bounds.Min.X, y)
-			for x := bounds.Min.X; x < bounds.Max.X; x++ {
-				r, g, b, a := src.Pix[i], src.Pix[i+1], src.Pix[i+2], src.Pix[i+3]
-				dr := int32(r) - int32(chromaKey.R)
-				dg := int32(g) - int32(chromaKey.G)
-				db := int32(b) - int32(chromaKey.B)
-				if dr*dr+dg*dg+db*db < thresh {
-					// transparent
-					newImg.Pix[j] = 0
-					newImg.Pix[j+1] = 0
-					newImg.Pix[j+2] = 0
-					newImg.Pix[j+3] = 0
-				} else {
-					newImg.Pix[j] = r
-					newImg.Pix[j+1] = g
-					newImg.Pix[j+2] = b
-					newImg.Pix[j+3] = a
-				}
-				i += 4
-				j += 4
-			}
-		}
-	case *image.NRGBA:
-		// convert NRGBA -> premultiplied RGBA through math bs
-		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			i := src.PixOffset(bounds.Min.X, y)
-			j := newImg.PixOffset(bounds.Min.X, y)
-			for x := bounds.Min.X; x < bounds.Max.X; x++ {
-				a := src.Pix[i+3]
-				var r, g, b uint8
-				switch a {
-				case 0xff:
-					r, g, b = src.Pix[i], src.Pix[i+1], src.Pix[i+2]
-				case 0:
-					r, g, b = 0, 0, 0
-				default:
-					// premultiply RGB by alpha
-					r32 := uint32(src.Pix[i])
-					r32 |= r32 << 8
-					r32 *= uint32(a)
-					r32 /= 0xff
-
-					g32 := uint32(src.Pix[i+1])
-					g32 |= g32 << 8
-					g32 *= uint32(a)
-					g32 /= 0xff
-
-					b32 := uint32(src.Pix[i+2])
-					b32 |= b32 << 8
-					b32 *= uint32(a)
-					b32 /= 0xff
-
-					r, g, b = uint8(r32>>8), uint8(g32>>8), uint8(b32>>8)
-				}
-
-				dr := int32(r) - int32(chromaKey.R)
-				dg := int32(g) - int32(chromaKey.G)
-				db := int32(b) - int32(chromaKey.B)
-				if dr*dr+dg*dg+db*db < thresh {
-					newImg.Pix[j] = 0
-					newImg.Pix[j+1] = 0
-					newImg.Pix[j+2] = 0
-					newImg.Pix[j+3] = 0
-				} else {
-					newImg.Pix[j] = r
-					newImg.Pix[j+1] = g
-					newImg.Pix[j+2] = b
-					newImg.Pix[j+3] = a
-				}
-				i += 4
-				j += 4
-			}
-		}
-	default:
-		panic(fmt.Sprintf("Unsupported image type: %T", img))
-	}
-	return newImg
-}
-
-func erodeAlpha(img *image.RGBA) *image.RGBA {
-	bounds := img.Bounds()
-	refined := image.NewRGBA(bounds)
-	stride := img.Stride
-
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			off := img.PixOffset(x, y)
-			if img.Pix[off+3] == 0 {
-				continue
-			}
-			isEdge := (x > bounds.Min.X && img.Pix[off-4+3] == 0) ||
-				(x < bounds.Max.X-1 && img.Pix[off+4+3] == 0) ||
-				(y > bounds.Min.Y && img.Pix[off-stride+3] == 0) ||
-				(y < bounds.Max.Y-1 && img.Pix[off+stride+3] == 0)
-
-			if !isEdge {
-				copy(refined.Pix[off:off+4], img.Pix[off:off+4])
-			}
-		}
-	}
-	return refined
 }
