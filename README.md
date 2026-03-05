@@ -14,17 +14,27 @@ The archives available for downloads are:
 2. Drag and drop that file into your Roblox Studio.
 3. Head to the explorer window, and move the newly added "pseudo3d-create" into `StarterPlayer` > `StarterCharacterScripts`.
 
+You should now have something akin to this:
+```
+StarterPlayer
+	├─StarterPlayerScripts
+	└─StarterCharacterScripts
+		└─ pseudo3d-create (LocalScript)
+```
+
 ## Capturing the Frames
 
 Now that you've set up the toolset, you can start using it. I will not go over how to get the models or animations, since you're expected to be the one providing those.
 
 1. First, get the model you want and place it in your `Workspace`, **make sure to rename the model to "Target."**
 2. Next, get the animation **keyframe** (`KeyframeSequence`), and move it inside the root level of the model. Rename the keyframe to "Animation".
+
 Your model should now look something like this:
 ```
-Target (Model)
-	├─ Animation (KeyframeSequence)
-	└─ Random Garbage (Idfk)
+Workspace
+	└─Target (Model)
+		├─ Animation (KeyframeSequence)
+		└─ Random Garbage (Idfk)
 ```
 
 You can run the game now (F5), and the toolset will automatically angle your camera and whatnot. There are control guides at the top of your screen to help you as well.
