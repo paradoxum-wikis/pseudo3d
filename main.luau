@@ -274,25 +274,20 @@ local function captureNext()
 	UIS.MouseIconEnabled = false
 	RunService.RenderStepped:Wait()
 
-	CaptureService:CaptureScreenshot(function(tempContentId)
-		CaptureService:PromptSaveCapturesToGallery({tempContentId}, function(results)
-			local saved = results[tempContentId]
+	CaptureService:TakeScreenshotCaptureAsync(function(result, screenshotCapture)
+		if result ~= Enum.ScreenshotCaptureResult.Success or not screenshotCapture then
+			warn("Screenshot failed: " .. tostring(result))
+			capturing = false
+			return
+		end
+
+		CaptureService:PromptSaveCapturesToGallery({screenshotCapture}, function(results)
+			local saved = results[screenshotCapture]
 			print(string.format("Frame %d/%d captured (saved: %s)", currentFrame, ROTATIONS, tostring(saved)))
 
 			if currentFrame < ROTATIONS then
 				currentFrame += 1
 				setFrame(currentFrame)
-				RunService.RenderStepped:Wait()
-				UIS.MouseIconEnabled = true
-
-				if previewing then
-					previewLabel.Visible = true
-					previewSubLabel.Visible = true
-				else
-					label.Visible = true
-					subLabel.Visible = true
-				end
-				pivotBillboard.Enabled = showPivot
 				capturing = false
 				captureNext()
 			else
