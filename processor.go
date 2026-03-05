@@ -55,7 +55,7 @@ func runBatchProcessing() {
 			currentImg = chromakey.Remove(currentImg, chromaKey, threshold)
 			if erodeEdges {
 				if rgba, ok := currentImg.(*image.RGBA); ok {
-					currentImg = chromakey.ErodeAlpha(rgba)
+					currentImg = chromakey.Erode(rgba)
 				}
 			}
 		}

@@ -6,7 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.7.3
 	github.com/disintegration/imaging v1.6.2
 	github.com/schollz/progressbar/v3 v3.19.0
-	github.com/t7ru/chromakey v1.0.0
+	github.com/t7ru/chromakey v1.0.1
 )
 
 require (
