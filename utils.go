@@ -20,7 +20,7 @@ func getPNGFiles(dir string) ([]string, error) {
 	}
 	var files []string
 	for _, e := range entries {
-		if filepath.Ext(e.Name()) == ".png" {
+		if strings.EqualFold(filepath.Ext(e.Name()), ".png") {
 			files = append(files, filepath.Join(dir, e.Name()))
 		}
 	}
