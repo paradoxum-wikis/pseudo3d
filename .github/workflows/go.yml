@@ -110,7 +110,7 @@ jobs:
           awk -v r="$LUAU_CONTENT" '{gsub(/\$\(cat main\.luau\)/, r)}1' template.xml > outtahere.rbxlx
 
       - name: Convert RBXLX to RBXL
-        uses: t7ru/rbx-convert-action@v0.1.1
+        uses: t7ru/rbx-convert-action@v0.2.0
         with:
           input: outtahere.rbxlx
           output: pseudo3d-create.rbxl
