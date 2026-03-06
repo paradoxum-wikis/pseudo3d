@@ -77,10 +77,16 @@ type interactiveArea struct {
 	widget.BaseWidget
 	onDrag    func(*fyne.DragEvent)
 	onDragEnd func()
+	onTap     func(*fyne.PointEvent)
 }
 
 func (i *interactiveArea) Dragged(e *fyne.DragEvent) { i.onDrag(e) }
 func (i *interactiveArea) DragEnd()                  { i.onDragEnd() }
+func (i *interactiveArea) Tapped(e *fyne.PointEvent) {
+	if i.onTap != nil {
+		i.onTap(e)
+	}
+}
 func (i *interactiveArea) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(canvas.NewRectangle(color.Transparent))
 }

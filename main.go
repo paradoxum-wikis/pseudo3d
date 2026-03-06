@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"image"
+	"image/color"
 	"log"
 	"math"
 	"time"
@@ -122,6 +123,19 @@ func main() {
 	var startImgX, startImgY float32
 	lockAspect := true
 	isNewDrag := true
+	colorPickMode := false
+	var pickColorToggleBtn *widget.Button
+	var colorPreview *canvas.Rectangle
+
+	updateColor := func(c color.Color) {
+		r, g, b, a := c.RGBA()
+		chromaKey = color.RGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)}
+		hexColor = fmt.Sprintf("%02X%02X%02X", chromaKey.R, chromaKey.G, chromaKey.B)
+		if colorPreview != nil {
+			colorPreview.FillColor = chromaKey
+			colorPreview.Refresh()
+		}
+	}
 
 	statusLabel := widget.NewLabel("No selection...")
 	statusLabel.Alignment = fyne.TextAlignCenter
@@ -177,6 +191,27 @@ func main() {
 			}
 		},
 		onDragEnd: func() { isNewDrag = true; updateStatus() },
+		onTap: func(e *fyne.PointEvent) {
+			if !colorPickMode {
+				return
+			}
+			ix, iy := screenToImage(e.Position.X, e.Position.Y)
+			nat := naturalSizes[currentImageIndex]
+			previewImg := previewImages[currentImageIndex]
+			pb := previewImg.Bounds()
+
+			// natural coordinates to preview img coordinates
+			px := int(float64(ix) / float64(nat.X) * float64(pb.Dx()))
+			py := int(float64(iy) / float64(nat.Y) * float64(pb.Dy()))
+
+			if px >= 0 && py >= 0 && px < pb.Dx() && py < pb.Dy() {
+				c := previewImg.At(pb.Min.X+px, pb.Min.Y+py)
+				updateColor(c)
+
+				colorPickMode = false
+				pickColorToggleBtn.SetText("Chroma Key Picker")
+			}
+		},
 	}
 	dragArea.ExtendBaseWidget(dragArea)
 
@@ -212,6 +247,25 @@ func main() {
 		}
 	}
 
+	colorPreview = canvas.NewRectangle(chromaKey)
+	colorPreview.SetMinSize(fyne.NewSize(30, 20))
+
+	pickColorToggleBtn = widget.NewButton("Chroma Key Picker", nil)
+	pickColorToggleBtn.OnTapped = func() {
+		colorPickMode = !colorPickMode
+		if colorPickMode {
+			pickColorToggleBtn.SetText("(Click something on the image you fool!)")
+		} else {
+			pickColorToggleBtn.SetText("Chroma Key Picker")
+		}
+	}
+
+	colorBox := container.NewHBox(
+		widget.NewLabel("Key:"),
+		container.NewCenter(colorPreview),
+		pickColorToggleBtn,
+	)
+
 	helpBtn := widget.NewButton("?", func() {
 		dialog.ShowInformation("Controls",
 			"Draw a selection by dragging on the image.\n\nArrow keys: nudge selection by 1px\nShift + Arrow keys: nudge by 10px",
@@ -234,7 +288,7 @@ func main() {
 	})
 
 	controls := container.NewVBox(
-		container.NewBorder(nil, nil, nil, helpBtn, toggleLockBtn),
+		container.NewBorder(nil, nil, nil, container.NewHBox(colorBox, helpBtn), toggleLockBtn),
 		container.NewBorder(nil, nil, nil, frameLabel, slider),
 		saveBtn,
 		statusLabel,
