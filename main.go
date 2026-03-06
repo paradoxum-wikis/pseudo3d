@@ -242,6 +242,13 @@ func main() {
 			px := int(float64(ix) / float64(nat.X) * float64(pb.Dx()))
 			py := int(float64(iy) / float64(nat.Y) * float64(pb.Dy()))
 
+			if px >= pb.Dx() {
+				px = pb.Dx() - 1
+			}
+			if py >= pb.Dy() {
+				py = pb.Dy() - 1
+			}
+
 			if px >= 0 && py >= 0 && px < pb.Dx() && py < pb.Dy() {
 				c := previewImg.At(pb.Min.X+px, pb.Min.Y+py)
 				updateColor(c)
