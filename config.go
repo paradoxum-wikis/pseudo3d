@@ -16,6 +16,7 @@ var (
 	erodeEdges    bool
 	hexColor      string
 	skipPrescale  bool
+	skipMenu      bool
 )
 
 const previewMaxPx = 1024 // max dimension for -prescale

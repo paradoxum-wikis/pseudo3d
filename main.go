@@ -30,6 +30,7 @@ func init() {
 	flag.BoolVar(&erodeEdges, "erode", false, "Aggressively trim 1 pixel of alpha from edges to kill residue")
 	flag.StringVar(&hexColor, "color-bg", "DF03DF", "Hex color code to remove as background")
 	flag.BoolVar(&skipPrescale, "skip-prescale", false, "Prescale preview images to "+fmt.Sprintf("%d", previewMaxPx)+"px max for faster UI (originals are still used for processing)")
+	flag.BoolVar(&skipMenu, "skip-menu", false, "Skip the terminal startup menu and use existing files in the process folder")
 }
 
 func main() {
@@ -54,35 +55,42 @@ func main() {
 	}
 
 	hasFiles := len(files) > 0
-	fmt.Println("1) Use existing files in \"process\" folder")
-	fmt.Println("2) Import latest Roblox capture (24 frames)")
-	fmt.Println("3) Exit")
-	if !hasFiles {
-		fmt.Printf("\nNo PNG files found in %s\n", inputDir)
-		fmt.Println("TIP: Run with -help (or -h) to see all available flags.")
-	}
-	fmt.Print("Choose an option: ")
 
-	var choice string
-	fmt.Scanln(&choice)
-
-	switch choice {
-	case "1":
+	if !skipMenu {
+		fmt.Println("1) Use existing files in \"process\" folder")
+		fmt.Println("2) Import latest Roblox capture (24 frames)")
+		fmt.Println("3) Exit")
 		if !hasFiles {
-			fmt.Printf("No PNG files found in %s\n", inputDir)
-			time.Sleep(3 * time.Second)
+			fmt.Printf("\nNo PNG files found in %s\n", inputDir)
+			fmt.Println("TIP: Run with -help (or -h) to see all available flags.")
+		}
+		fmt.Print("Choose an option: ")
+
+		var choice string
+		fmt.Scanln(&choice)
+
+		switch choice {
+		case "1":
+			if !hasFiles {
+				fmt.Printf("No PNG files found in %s\n", inputDir)
+				time.Sleep(3 * time.Second)
+				return
+			}
+		case "2":
+			imported, err := importLatestCaptures(inputDir, "archive")
+			if err != nil {
+				fmt.Printf("Import failed: %v\n", err)
+				time.Sleep(3 * time.Second)
+				return
+			}
+			files = imported
+			fmt.Printf("Imported %d frame(s) into %s\n\n", len(files), inputDir)
+		default:
 			return
 		}
-	case "2":
-		imported, err := importLatestCaptures(inputDir, "archive")
-		if err != nil {
-			fmt.Printf("Import failed: %v\n", err)
-			time.Sleep(3 * time.Second)
-			return
-		}
-		files = imported
-		fmt.Printf("Imported %d frame(s) into %s\n\n", len(files), inputDir)
-	default:
+	} else if !hasFiles {
+		fmt.Printf("No PNG files found in %s\n", inputDir)
+		time.Sleep(3 * time.Second)
 		return
 	}
 
