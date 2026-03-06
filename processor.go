@@ -93,11 +93,13 @@ func runBatchProcessing() {
 		}
 
 		for _, c := range chunks {
-			textData := append([]byte(c.key), 0)
-			textData = append(textData, []byte(c.val)...)
+			textData := make([]byte, 0, len(c.key)+1+len(c.val))
+			textData = append(textData, c.key...)
+			textData = append(textData, 0)
+			textData = append(textData, c.val...)
 
 			binary.Write(&newPng, binary.BigEndian, uint32(len(textData)))
-			newPng.Write([]byte("tEXt"))
+			newPng.WriteString("tEXt")
 			newPng.Write(textData)
 
 			crc := crc32.NewIEEE()
