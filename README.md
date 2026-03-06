@@ -10,17 +10,8 @@ The archives available for downloads are:
 
 ## Setting Up the Toolset
 
-1. Open the folder in your file explorer, and you will see a "pseudo3d-create.rbxmx" file.
-2. Drag and drop that file into your Roblox Studio.
-3. Head to the explorer window, and move the newly added "pseudo3d-create" into `StarterPlayer` > `StarterCharacterScripts`.
-
-You should now have something akin to this:
-```
-StarterPlayer
-	├─StarterPlayerScripts
-	└─StarterCharacterScripts
-		└─ pseudo3d-create (LocalScript)
-```
+1. Open the folder in your file explorer, and you will see a "pseudo3d-create.rbxlx" file.
+2. Open that file and you will be loaded into Roblox Studio, you should now see a place that is pre-configured.
 
 ## Capturing the Frames
 
