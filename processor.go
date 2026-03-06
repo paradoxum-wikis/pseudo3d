@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"hash/crc32"
 	"image"
-	"image/color"
 	"image/draw"
 	"image/png"
 	"log"
@@ -45,9 +44,9 @@ func runBatchProcessing() {
 	}
 
 	bar := progressbar.Default(int64(len(files)), "Processing frames")
-	var frames []image.Image
+	sheet := image.NewRGBA(image.Rect(0, 0, targetSize*len(files), targetSize))
 
-	for _, path := range files {
+	for i, path := range files {
 		img := loadImage(path)
 
 		cropped := imaging.Crop(img, image.Rect(
@@ -66,16 +65,14 @@ func runBatchProcessing() {
 		}
 
 		resized := imaging.Fit(currentImg, targetSize, targetSize, imaging.Lanczos)
-		squareFrame := imaging.New(targetSize, targetSize, color.Transparent)
-		squareFrame = imaging.PasteCenter(squareFrame, resized)
+		b := resized.Bounds()
+		dx := (targetSize - b.Dx()) / 2
+		dy := (targetSize - b.Dy()) / 2
+		dp := image.Pt(i*targetSize+dx, dy)
 
-		frames = append(frames, squareFrame)
+		draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
+
 		bar.Add(1)
-	}
-
-	sheet := image.NewRGBA(image.Rect(0, 0, targetSize*len(frames), targetSize))
-	for i, frame := range frames {
-		draw.Draw(sheet, image.Rect(i*targetSize, 0, (i+1)*targetSize, targetSize), frame, image.Point{}, draw.Src)
 	}
 
 	var buf bytes.Buffer
@@ -122,6 +119,6 @@ func runBatchProcessing() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nHeeho! Spritesheet saved as %s (%d frames)\n", outputFile, len(frames))
+	fmt.Printf("\nHeeho! Spritesheet saved as %s (%d frames)\n", outputFile, len(files))
 	time.Sleep(3 * time.Second)
 }
