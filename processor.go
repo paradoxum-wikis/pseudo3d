@@ -85,6 +85,7 @@ func runBatchProcessing() {
 		var newPng bytes.Buffer
 		newPng.Write(pngData[:33])
 
+		chunkType := []byte("tEXt")
 		chunks := []struct{ key, val string }{
 			{"Software", "Pseudo3D"},
 			{"Author", "Paradoxum Wikis' Pseudo3D"},
@@ -98,14 +99,17 @@ func runBatchProcessing() {
 			textData = append(textData, 0)
 			textData = append(textData, c.val...)
 
-			binary.Write(&newPng, binary.BigEndian, uint32(len(textData)))
-			newPng.WriteString("tEXt")
+			var b [4]byte
+			binary.BigEndian.PutUint32(b[:], uint32(len(textData)))
+			newPng.Write(b[:])
+			newPng.Write(chunkType)
 			newPng.Write(textData)
 
 			crc := crc32.NewIEEE()
-			crc.Write([]byte("tEXt"))
+			crc.Write(chunkType)
 			crc.Write(textData)
-			binary.Write(&newPng, binary.BigEndian, crc.Sum32())
+			binary.BigEndian.PutUint32(b[:], crc.Sum32())
+			newPng.Write(b[:])
 		}
 
 		newPng.Write(pngData[33:])
