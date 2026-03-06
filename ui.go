@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -78,6 +79,7 @@ type interactiveArea struct {
 	onDrag    func(*fyne.DragEvent)
 	onDragEnd func()
 	onTap     func(*fyne.PointEvent)
+	getCursor func() desktop.Cursor
 }
 
 func (i *interactiveArea) Dragged(e *fyne.DragEvent) { i.onDrag(e) }
@@ -87,6 +89,13 @@ func (i *interactiveArea) Tapped(e *fyne.PointEvent) {
 		i.onTap(e)
 	}
 }
+func (i *interactiveArea) Cursor() desktop.Cursor {
+	if i.getCursor != nil {
+		return i.getCursor()
+	}
+	return desktop.DefaultCursor
+}
+
 func (i *interactiveArea) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(canvas.NewRectangle(color.Transparent))
 }

@@ -151,6 +151,12 @@ func main() {
 	}
 
 	dragArea := &interactiveArea{
+		getCursor: func() desktop.Cursor {
+			if colorPickMode {
+				return desktop.CrosshairCursor
+			}
+			return desktop.DefaultCursor
+		},
 		onDrag: func(e *fyne.DragEvent) {
 			if isNewDrag {
 				startImgX, startImgY = screenToImage(e.Position.X-e.Dragged.DX, e.Position.Y-e.Dragged.DY)
