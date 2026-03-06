@@ -85,17 +85,30 @@ func runBatchProcessing() {
 
 	pngData := buf.Bytes()
 	if len(pngData) > 33 {
-		textData := append([]byte("Description"), 0)
-		textData = append(textData, []byte("Generated using pseudo3d-viewer 1.1 (Fyne Port)")...)
 		var newPng bytes.Buffer
 		newPng.Write(pngData[:33])
-		binary.Write(&newPng, binary.BigEndian, uint32(len(textData)))
-		newPng.Write([]byte("tEXt"))
-		newPng.Write(textData)
-		crc := crc32.NewIEEE()
-		crc.Write([]byte("tEXt"))
-		crc.Write(textData)
-		binary.Write(&newPng, binary.BigEndian, crc.Sum32())
+
+		chunks := []struct{ key, val string }{
+			{"Software", "Pseudo3D"},
+			{"Author", "Paradoxum Wikis' Pseudo3D"},
+			{"Description", "Generated using Paradoxum Wikis' Pseudo3D"},
+			{"Copyright", "https://github.com/paradoxum-wikis/pseudo3d"},
+		}
+
+		for _, c := range chunks {
+			textData := append([]byte(c.key), 0)
+			textData = append(textData, []byte(c.val)...)
+
+			binary.Write(&newPng, binary.BigEndian, uint32(len(textData)))
+			newPng.Write([]byte("tEXt"))
+			newPng.Write(textData)
+
+			crc := crc32.NewIEEE()
+			crc.Write([]byte("tEXt"))
+			crc.Write(textData)
+			binary.Write(&newPng, binary.BigEndian, crc.Sum32())
+		}
+
 		newPng.Write(pngData[33:])
 		pngData = newPng.Bytes()
 	}
