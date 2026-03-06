@@ -49,7 +49,12 @@ func runBatchProcessing() {
 
 	for _, path := range files {
 		img := loadImage(path)
-		var currentImg image.Image = img
+
+		cropped := imaging.Crop(img, image.Rect(
+			globalSafeZone.MinX, globalSafeZone.MinY,
+			globalSafeZone.MaxX, globalSafeZone.MaxY,
+		))
+		var currentImg image.Image = cropped
 
 		if !skipBgRemoval {
 			currentImg = chromakey.Remove(currentImg, chromaKey, threshold)
@@ -60,11 +65,7 @@ func runBatchProcessing() {
 			}
 		}
 
-		cropped := imaging.Crop(currentImg, image.Rect(
-			globalSafeZone.MinX, globalSafeZone.MinY,
-			globalSafeZone.MaxX, globalSafeZone.MaxY,
-		))
-		resized := imaging.Fit(cropped, targetSize, targetSize, imaging.Lanczos)
+		resized := imaging.Fit(currentImg, targetSize, targetSize, imaging.Lanczos)
 		squareFrame := imaging.New(targetSize, targetSize, color.Transparent)
 		squareFrame = imaging.PasteCenter(squareFrame, resized)
 
