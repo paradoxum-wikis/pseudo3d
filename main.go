@@ -47,10 +47,42 @@ func main() {
 	}
 
 	files, err := getPNGFiles(inputDir)
-	if err != nil || len(files) == 0 {
-		fmt.Printf("No PNG files found in %s\n", inputDir)
-		fmt.Println("TIP: Run with -help (or -h) to see all available flags.")
+	if err != nil {
+		fmt.Printf("Could not read %s: %v\n", inputDir, err)
 		time.Sleep(3 * time.Second)
+		return
+	}
+
+	hasFiles := len(files) > 0
+	fmt.Println("1) Use existing files in \"process\" folder")
+	fmt.Println("2) Import latest Roblox capture (24 frames)")
+	fmt.Println("3) Exit")
+	if !hasFiles {
+		fmt.Printf("\nNo PNG files found in %s\n", inputDir)
+		fmt.Println("TIP: Run with -help (or -h) to see all available flags.")
+	}
+	fmt.Print("Choose an option: ")
+
+	var choice string
+	fmt.Scanln(&choice)
+
+	switch choice {
+	case "1":
+		if !hasFiles {
+			fmt.Printf("No PNG files found in %s\n", inputDir)
+			time.Sleep(3 * time.Second)
+			return
+		}
+	case "2":
+		imported, err := importLatestCaptures(inputDir, "archive")
+		if err != nil {
+			fmt.Printf("Import failed: %v\n", err)
+			time.Sleep(3 * time.Second)
+			return
+		}
+		files = imported
+		fmt.Printf("Imported %d frame(s) into %s\n\n", len(files), inputDir)
+	default:
 		return
 	}
 

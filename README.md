@@ -50,7 +50,7 @@ Press Q and you can start the capturing process. Note that your cursor **will be
 	- Flatpak: `cd ~/.var/app/org.vinegarhq.Vinegar/data/vinegar/studio/prefix/drive_c/users/$USER/AppData/Local/Roblox/tmp-capture-storage`
 	- Native: `cd ~/.local/share/vinegar/studio/prefix/drive_c/users/$USER/AppData/Local/Roblox/tmp-capture-storage`
 
-You will have to move all of the files you've just captured (24 by default) to the "process" folder inside your toolset directory.
+The toolset features an auto-import function that can automatically copy the latest captures (24 images) from your capture directory into the "process" folder and will **safely archive** any existing files into "archive." Alternatively, you can move them manually to the "process" folder inside your toolset directory.
 
 ## Processing the Frames
 
