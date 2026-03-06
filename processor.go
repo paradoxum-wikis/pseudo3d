@@ -10,6 +10,7 @@ import (
 	"image/png"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -114,6 +115,19 @@ func runBatchProcessing() {
 
 		newPng.Write(pngData[33:])
 		pngData = newPng.Bytes()
+	}
+
+	if _, err := os.Stat(outputFile); err == nil {
+		os.MkdirAll("archive", 0755)
+		base := strings.TrimSuffix(filepath.Base(outputFile), filepath.Ext(outputFile))
+		backupName := filepath.Join("archive", fmt.Sprintf("%s.png", base))
+		for i := 2; ; i++ {
+			if _, err := os.Stat(backupName); os.IsNotExist(err) {
+				break
+			}
+			backupName = filepath.Join("archive", fmt.Sprintf("%s-%d.png", base, i))
+		}
+		os.Rename(outputFile, backupName)
 	}
 
 	out, err := os.Create(outputFile)
