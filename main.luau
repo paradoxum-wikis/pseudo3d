@@ -71,12 +71,17 @@ previewSubLabel.Visible = false
 local model = workspace:WaitForChild("Target", 10)
 if not model then return warn("No 'Target' found in workspace!") end
 
+local character = player.Character or player.CharacterAdded:Wait()
 if CLEAR_WORKSPACE then
 	for _, obj in ipairs(workspace:GetChildren()) do
-		if obj ~= model and obj ~= workspace.Terrain and not obj:IsA("Camera") then
+		if obj ~= model and obj ~= workspace.Terrain and not obj:IsA("Camera") and obj ~= character then
 			obj:Destroy()
 		end
 	end
+end
+
+for _, part in ipairs(character:GetDescendants()) do
+	if part:IsA("BasePart") then part.Transparency = 1 part.Anchored = true end
 end
 
 local rootPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
