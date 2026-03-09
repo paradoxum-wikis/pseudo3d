@@ -11,13 +11,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-      - name: Cache Go modules
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('sprites/go.sum') }}
+          cache-dependency-path: sprites/go.sum
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev
       - name: Build
         working-directory: sprites
@@ -35,13 +29,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-      - name: Cache Go modules
-        uses: actions/cache@v5
-        with:
-          path: |
-            C:/Users/runneradmin/go/pkg/mod
-            C:/Users/runneradmin/AppData/Local/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('sprites/go.sum') }}
+          cache-dependency-path: sprites/go.sum
       - shell: pwsh
         working-directory: sprites
         run: |
@@ -59,13 +47,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-      - name: Cache Go modules
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('sprites/go.sum') }}
+          cache-dependency-path: sprites/go.sum
       - name: Build
         working-directory: sprites
         run: |
