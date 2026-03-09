@@ -19,6 +19,7 @@ local DEPTH_MAX       = 10       			-- nearest depth shift allowed
 local ZOOM_STEP       = .1        			-- units moved per R/F press
 local ZOOM_MIN        = 2        			-- closest the camera can get
 local ZOOM_MAX        = 50       			-- furthest the camera can get
+local BACKDROP		  = true       			-- whether to use a backdrop behind the model
 local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
 local FLAT_LIGHTING   = false     			-- set false to keep your scene lighting as is
 local BLOOM_INTENSITY = 0					-- set to nil to leave bloom as is
@@ -157,17 +158,19 @@ if BLOOM_INTENSITY ~= nil then
 	bloom.Intensity = BLOOM_INTENSITY
 end
 
-local backdrop = Instance.new("Part", workspace)
-backdrop.Size = Vector3.new(2000, 2000, 1)
-backdrop.Anchored = true
-backdrop.CanCollide = false
-backdrop.CastShadow = false
+if BACKDROP then
+	local backdrop = Instance.new("Part", workspace)
+	backdrop.Size = Vector3.new(2000, 2000, 1)
+	backdrop.Anchored = true
+	backdrop.CanCollide = false
+	backdrop.CastShadow = false
 
-local surfaceGui = Instance.new("SurfaceGui", backdrop)
-surfaceGui.LightInfluence = 0
-local bgFrame = Instance.new("Frame", surfaceGui)
-bgFrame.Size = UDim2.fromScale(1, 1)
-bgFrame.BackgroundColor3 = BACKDROP_COLOR
+	local surfaceGui = Instance.new("SurfaceGui", backdrop)
+	surfaceGui.LightInfluence = 0
+	local bgFrame = Instance.new("Frame", surfaceGui)
+	bgFrame.Size = UDim2.fromScale(1, 1)
+	bgFrame.BackgroundColor3 = BACKDROP_COLOR
+end
 
 local pivotIndicator = Instance.new("Part", workspace)
 pivotIndicator.Size = Vector3.new(0.1, 0.1, 0.1)
@@ -228,7 +231,9 @@ local function setFrame(i)
 	local angle  = math.rad((i - 1) * (360 / ROTATIONS)) + startingAngleOffset
 	local camPos = lookAt + Vector3.new(math.sin(angle) * distance, 0, math.cos(angle) * distance)
 	cam.CFrame   = CFrame.lookAt(camPos, lookAt)
-	backdrop.CFrame = CFrame.lookAt(lookAt + ((lookAt - camPos).Unit * 500), camPos)
+	if BACKDROP then
+		backdrop.CFrame = CFrame.lookAt(lookAt + ((lookAt - camPos).Unit * 500), camPos)
+	end
 	pivotIndicator.CFrame = CFrame.new(lookAt)
 
 	updateUI()
