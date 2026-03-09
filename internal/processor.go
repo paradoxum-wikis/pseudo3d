@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"bytes"
@@ -19,25 +19,25 @@ import (
 	"github.com/t7ru/chromakey"
 )
 
-func runBatchProcessing() {
-	outputFile = strings.TrimSuffix(outputFile, ".png") + ".png"
-	loadSafeZoneConfig()
-	if !globalSafeZone.Active {
+func RunBatchProcessing() {
+	OutputFile = strings.TrimSuffix(OutputFile, ".png") + ".png"
+	LoadSafeZoneConfig()
+	if !GlobalSafeZone.Active {
 		fmt.Println("No safe zone configured. Run without -process to open the UI first.")
 		os.Exit(1)
 	}
 
-	files, err := getPNGFiles(inputDir)
+	files, err := GetPNGFiles(InputDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Printf("Configuration:\n")
-	fmt.Printf(" - Input: %s | Output: %s\n", inputDir, outputFile)
-	fmt.Printf(" - Target Size: %dx%d\n", targetSize, targetSize)
-	if !skipBgRemoval {
-		fmt.Printf(" - BG Removal: ON (Color: #%s, Threshold: %.1f)\n", strings.ToUpper(strings.TrimPrefix(hexColor, "#")), threshold)
-		if erodeEdges {
+	fmt.Printf(" - Input: %s | Output: %s\n", InputDir, OutputFile)
+	fmt.Printf(" - Target Size: %dx%d\n", TargetSize, TargetSize)
+	if !SkipBgRemoval {
+		fmt.Printf(" - BG Removal: ON (Color: #%s, Threshold: %.1f)\n", strings.ToUpper(strings.TrimPrefix(HexColor, "#")), Threshold)
+		if ErodeEdges {
 			fmt.Printf(" - Edge Erosion: ON\n")
 		}
 	} else {
@@ -45,31 +45,31 @@ func runBatchProcessing() {
 	}
 
 	bar := progressbar.Default(int64(len(files)), "Processing frames")
-	sheet := image.NewRGBA(image.Rect(0, 0, targetSize*len(files), targetSize))
+	sheet := image.NewRGBA(image.Rect(0, 0, TargetSize*len(files), TargetSize))
 
 	for i, path := range files {
-		img := loadImage(path)
+		img := LoadImage(path)
 
 		cropped := imaging.Crop(img, image.Rect(
-			globalSafeZone.MinX, globalSafeZone.MinY,
-			globalSafeZone.MaxX, globalSafeZone.MaxY,
+			GlobalSafeZone.MinX, GlobalSafeZone.MinY,
+			GlobalSafeZone.MaxX, GlobalSafeZone.MaxY,
 		))
 		var currentImg image.Image = cropped
 
-		if !skipBgRemoval {
-			currentImg = chromakey.Remove(currentImg, chromaKey, threshold)
-			if erodeEdges {
+		if !SkipBgRemoval {
+			currentImg = chromakey.Remove(currentImg, ChromaKey, Threshold)
+			if ErodeEdges {
 				if rgba, ok := currentImg.(*image.RGBA); ok {
 					currentImg = chromakey.Erode(rgba)
 				}
 			}
 		}
 
-		resized := imaging.Fit(currentImg, targetSize, targetSize, imaging.Lanczos)
+		resized := imaging.Fit(currentImg, TargetSize, TargetSize, imaging.Lanczos)
 		b := resized.Bounds()
-		dx := (targetSize - b.Dx()) / 2
-		dy := (targetSize - b.Dy()) / 2
-		dp := image.Pt(i*targetSize+dx, dy)
+		dx := (TargetSize - b.Dx()) / 2
+		dy := (TargetSize - b.Dy()) / 2
+		dp := image.Pt(i*TargetSize+dx, dy)
 
 		draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
 
@@ -117,9 +117,9 @@ func runBatchProcessing() {
 		pngData = newPng.Bytes()
 	}
 
-	if _, err := os.Stat(outputFile); err == nil {
+	if _, err := os.Stat(OutputFile); err == nil {
 		os.MkdirAll("archive", 0755)
-		base := strings.TrimSuffix(filepath.Base(outputFile), filepath.Ext(outputFile))
+		base := strings.TrimSuffix(filepath.Base(OutputFile), filepath.Ext(OutputFile))
 		backupName := filepath.Join("archive", fmt.Sprintf("%s.png", base))
 		for i := 2; ; i++ {
 			if _, err := os.Stat(backupName); os.IsNotExist(err) {
@@ -127,10 +127,10 @@ func runBatchProcessing() {
 			}
 			backupName = filepath.Join("archive", fmt.Sprintf("%s-%d.png", base, i))
 		}
-		os.Rename(outputFile, backupName)
+		os.Rename(OutputFile, backupName)
 	}
 
-	out, err := os.Create(outputFile)
+	out, err := os.Create(OutputFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -139,6 +139,6 @@ func runBatchProcessing() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nHeeho! Spritesheet saved as %s (%d frames)\n", outputFile, len(files))
+	fmt.Printf("\nHeeho! Spritesheet saved as %s (%d frames)\n", OutputFile, len(files))
 	time.Sleep(3 * time.Second)
 }

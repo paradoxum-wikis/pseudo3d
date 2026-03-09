@@ -18,50 +18,52 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/disintegration/imaging"
 	"github.com/schollz/progressbar/v3"
+
+	"pseudo3d-sprites/internal"
 )
 
 func init() {
-	flag.BoolVar(&processMode, "skip-ui", false, "Skip UI and directly run batch processing")
-	flag.IntVar(&targetSize, "size", 512, "Output size of the square frames (for example, 300 for 300x300)")
-	flag.BoolVar(&skipBgRemoval, "skip-bg", false, "Skip chroma key background removal completely")
-	flag.Float64Var(&threshold, "threshold-bg", 70.0, "Tolerance threshold for background removal (higher = more aggressive)")
-	flag.StringVar(&inputDir, "in", "./process", "Input directory containing PNG frames")
-	flag.StringVar(&outputFile, "out", "spritesheet.png", "Output spritesheet filename")
-	flag.BoolVar(&erodeEdges, "erode", false, "Aggressively trim 1 pixel of alpha from edges to kill residue")
-	flag.StringVar(&hexColor, "color-bg", "DF03DF", "Hex color code to remove as background")
-	flag.BoolVar(&skipPrescale, "skip-prescale", false, "Prescale preview images to "+fmt.Sprintf("%d", previewMaxPx)+"px max for faster UI (originals are still used for processing)")
-	flag.BoolVar(&skipMenu, "skip-menu", false, "Skip the terminal startup menu and use existing files in the process folder")
+	flag.BoolVar(&internal.ProcessMode, "skip-ui", false, "Skip UI and directly run batch processing")
+	flag.IntVar(&internal.TargetSize, "size", 512, "Output size of the square frames (for example, 300 for 300x300)")
+	flag.BoolVar(&internal.SkipBgRemoval, "skip-bg", false, "Skip chroma key background removal completely")
+	flag.Float64Var(&internal.Threshold, "threshold-bg", 70.0, "Tolerance threshold for background removal (higher = more aggressive)")
+	flag.StringVar(&internal.InputDir, "in", "./process", "Input directory containing PNG frames")
+	flag.StringVar(&internal.OutputFile, "out", "spritesheet.png", "Output spritesheet filename")
+	flag.BoolVar(&internal.ErodeEdges, "erode", false, "Aggressively trim 1 pixel of alpha from edges to kill residue")
+	flag.StringVar(&internal.HexColor, "color-bg", "DF03DF", "Hex color code to remove as background")
+	flag.BoolVar(&internal.SkipPrescale, "skip-prescale", false, "Prescale preview images to "+fmt.Sprintf("%d", internal.PreviewMaxPx)+"px max for faster UI (originals are still used for processing)")
+	flag.BoolVar(&internal.SkipMenu, "skip-menu", false, "Skip the terminal startup menu and use existing files in the process folder")
 }
 
 func main() {
 	flag.Parse()
 
 	var err error
-	chromaKey, err = parseHexColor(hexColor)
+	internal.ChromaKey, err = internal.ParseHexColor(internal.HexColor)
 	if err != nil {
 		log.Fatalf("Error parsing chroma key color: %v\n", err)
 	}
 
-	if processMode {
-		runBatchProcessing()
+	if internal.ProcessMode {
+		internal.RunBatchProcessing()
 		return
 	}
 
-	files, err := getPNGFiles(inputDir)
+	files, err := internal.GetPNGFiles(internal.InputDir)
 	if err != nil {
-		fmt.Printf("Could not read %s: %v\n", inputDir, err)
+		fmt.Printf("Could not read %s: %v\n", internal.InputDir, err)
 		time.Sleep(3 * time.Second)
 		return
 	}
 
 	hasFiles := len(files) > 0
 
-	if !skipMenu {
+	if !internal.SkipMenu {
 		fmt.Println("1) Use existing files in \"process\" folder")
 		fmt.Println("2) Import latest Roblox capture (24 frames)")
 		fmt.Println("3) Exit")
 		if !hasFiles {
-			fmt.Printf("\nNo PNG files found in %s\n", inputDir)
+			fmt.Printf("\nNo PNG files found in %s\n", internal.InputDir)
 			fmt.Println("TIP: Run with -help (or -h) to see all available flags.")
 		}
 		fmt.Print("Choose an option: ")
@@ -72,24 +74,24 @@ func main() {
 		switch choice {
 		case "1":
 			if !hasFiles {
-				fmt.Printf("No PNG files found in %s\n", inputDir)
+				fmt.Printf("No PNG files found in %s\n", internal.InputDir)
 				time.Sleep(3 * time.Second)
 				return
 			}
 		case "2":
-			imported, err := importLatestCaptures(inputDir, "archive")
+			imported, err := internal.ImportLatestCaptures(internal.InputDir, "archive")
 			if err != nil {
 				fmt.Printf("Import failed: %v\n", err)
 				time.Sleep(3 * time.Second)
 				return
 			}
 			files = imported
-			fmt.Printf("Imported %d frame(s) into %s\n\n", len(files), inputDir)
+			fmt.Printf("Imported %d frame(s) into %s\n\n", len(files), internal.InputDir)
 		default:
 			return
 		}
 	} else if !hasFiles {
-		fmt.Printf("No PNG files found in %s\n", inputDir)
+		fmt.Printf("No PNG files found in %s\n", internal.InputDir)
 		time.Sleep(3 * time.Second)
 		return
 	}
@@ -98,8 +100,8 @@ func main() {
 	w := a.NewWindow("Safe Zone Selector")
 	w.Resize(fyne.NewSize(900, 700))
 
-	if !skipPrescale {
-		fmt.Printf("Preloading %d frames (prescaled to max %dpx)...\n", len(files), previewMaxPx)
+	if !internal.SkipPrescale {
+		fmt.Printf("Preloading %d frames (prescaled to max %dpx)...\n", len(files), internal.PreviewMaxPx)
 	} else {
 		fmt.Printf("Preloading %d frames (full resolution)...\n", len(files))
 	}
@@ -110,12 +112,12 @@ func main() {
 	{
 		bar := progressbar.Default(int64(len(files)), "Loading frames")
 		for i, f := range files {
-			full := loadImage(f)
+			full := internal.LoadImage(f)
 			b := full.Bounds()
 			naturalSizes[i] = image.Pt(b.Dx(), b.Dy())
 
-			if !skipPrescale {
-				previewImages[i] = imaging.Fit(full, previewMaxPx, previewMaxPx, imaging.Lanczos)
+			if !internal.SkipPrescale {
+				previewImages[i] = imaging.Fit(full, internal.PreviewMaxPx, internal.PreviewMaxPx, imaging.Lanczos)
 			} else {
 				previewImages[i] = full
 			}
@@ -129,7 +131,7 @@ func main() {
 	imgWidget := canvas.NewImageFromImage(previewImages[currentImageIndex])
 	imgWidget.FillMode = canvas.ImageFillContain
 
-	overlay := newSelectionOverlay()
+	overlay := internal.NewSelectionOverlay()
 
 	getRenderedImageBounds := func() (offX, offY, rendW, rendH float32) {
 		nat := naturalSizes[currentImageIndex]
@@ -147,10 +149,10 @@ func main() {
 		return
 	}
 
-	overlay.getImageBounds = getRenderedImageBounds
+	overlay.GetImageBounds = getRenderedImageBounds
 	nat0 := naturalSizes[0]
-	overlay.natW = float32(nat0.X)
-	overlay.natH = float32(nat0.Y)
+	overlay.NatW = float32(nat0.X)
+	overlay.NatH = float32(nat0.Y)
 
 	screenToImage := func(sx, sy float32) (float32, float32) {
 		nat := naturalSizes[currentImageIndex]
@@ -169,10 +171,10 @@ func main() {
 
 	updateColor := func(c color.Color) {
 		r, g, b, a := c.RGBA()
-		chromaKey = color.RGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)}
-		hexColor = fmt.Sprintf("%02X%02X%02X", chromaKey.R, chromaKey.G, chromaKey.B)
+		internal.ChromaKey = color.RGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)}
+		internal.HexColor = fmt.Sprintf("%02X%02X%02X", internal.ChromaKey.R, internal.ChromaKey.G, internal.ChromaKey.B)
 		if colorPreview != nil {
-			colorPreview.FillColor = chromaKey
+			colorPreview.FillColor = internal.ChromaKey
 			colorPreview.Refresh()
 		}
 	}
@@ -181,23 +183,23 @@ func main() {
 	statusLabel.Alignment = fyne.TextAlignCenter
 
 	updateStatus := func() {
-		if !overlay.hasSelection {
+		if !overlay.HasSelection {
 			statusLabel.SetText("No selection...")
 			return
 		}
 		statusLabel.SetText(fmt.Sprintf("Selected: %dx%d at (%d, %d)",
-			int(overlay.maxX-overlay.minX), int(overlay.maxY-overlay.minY),
-			int(overlay.minX), int(overlay.minY)))
+			int(overlay.MaxX-overlay.MinX), int(overlay.MaxY-overlay.MinY),
+			int(overlay.MinX), int(overlay.MinY)))
 	}
 
-	dragArea := &interactiveArea{
-		getCursor: func() desktop.Cursor {
+	dragArea := &internal.InteractiveArea{
+		GetCursor: func() desktop.Cursor {
 			if colorPickMode {
 				return desktop.CrosshairCursor
 			}
 			return desktop.DefaultCursor
 		},
-		onDrag: func(e *fyne.DragEvent) {
+		OnDrag: func(e *fyne.DragEvent) {
 			if isNewDrag {
 				startImgX, startImgY = screenToImage(e.Position.X-e.Dragged.DX, e.Position.Y-e.Dragged.DY)
 				isNewDrag = false
@@ -236,8 +238,8 @@ func main() {
 				updateStatus()
 			}
 		},
-		onDragEnd: func() { isNewDrag = true; updateStatus() },
-		onTap: func(e *fyne.PointEvent) {
+		OnDragEnd: func() { isNewDrag = true; updateStatus() },
+		OnTap: func(e *fyne.PointEvent) {
 			if !colorPickMode {
 				return
 			}
@@ -284,8 +286,8 @@ func main() {
 		imgWidget.Refresh()
 
 		nat := naturalSizes[currentImageIndex]
-		overlay.natW = float32(nat.X)
-		overlay.natH = float32(nat.Y)
+		overlay.NatW = float32(nat.X)
+		overlay.NatH = float32(nat.Y)
 		overlay.Refresh()
 		frameLabel.SetText(fmt.Sprintf("Frame %d / %d", currentImageIndex+1, len(files)))
 	}
@@ -300,7 +302,7 @@ func main() {
 		}
 	}
 
-	colorPreview = canvas.NewRectangle(chromaKey)
+	colorPreview = canvas.NewRectangle(internal.ChromaKey)
 	colorPreview.SetMinSize(fyne.NewSize(30, 20))
 
 	pickColorToggleBtn = widget.NewButton("Chroma Key Picker", nil)
@@ -326,17 +328,17 @@ func main() {
 	})
 
 	saveBtn := widget.NewButton("Save & Process!", func() {
-		if !overlay.hasSelection || overlay.minX == overlay.maxX {
+		if !overlay.HasSelection || overlay.MinX == overlay.MaxX {
 			return
 		}
-		globalSafeZone = SafeZone{
-			MinX:   int(math.Round(float64(overlay.minX))),
-			MinY:   int(math.Round(float64(overlay.minY))),
-			MaxX:   int(math.Round(float64(overlay.maxX))),
-			MaxY:   int(math.Round(float64(overlay.maxY))),
+		internal.GlobalSafeZone = internal.SafeZone{
+			MinX:   int(math.Round(float64(overlay.MinX))),
+			MinY:   int(math.Round(float64(overlay.MinY))),
+			MaxX:   int(math.Round(float64(overlay.MaxX))),
+			MaxY:   int(math.Round(float64(overlay.MaxY))),
 			Active: true,
 		}
-		saveSafeZoneConfig()
+		internal.SaveSafeZoneConfig()
 		w.Close()
 	})
 
@@ -351,7 +353,7 @@ func main() {
 
 	// arrow keys nudge
 	w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
-		if !overlay.hasSelection {
+		if !overlay.HasSelection {
 			return
 		}
 
@@ -364,8 +366,8 @@ func main() {
 
 		nat := naturalSizes[currentImageIndex]
 		natW, natH := float32(nat.X), float32(nat.Y)
-		selW, selH := overlay.maxX-overlay.minX, overlay.maxY-overlay.minY
-		minX, minY, maxX, maxY := overlay.minX, overlay.minY, overlay.maxX, overlay.maxY
+		selW, selH := overlay.MaxX-overlay.MinX, overlay.MaxY-overlay.MinY
+		minX, minY, maxX, maxY := overlay.MinX, overlay.MinY, overlay.MaxX, overlay.MaxY
 
 		switch k.Name {
 		case fyne.KeyLeft:
@@ -403,8 +405,8 @@ func main() {
 
 	w.ShowAndRun()
 
-	if globalSafeZone.Active {
+	if internal.GlobalSafeZone.Active {
 		fmt.Println("\nSafe zone received. Starting batch process...")
-		runBatchProcessing()
+		internal.RunBatchProcessing()
 	}
 }

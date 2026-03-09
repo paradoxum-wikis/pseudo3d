@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func getPNGFiles(dir string) ([]string, error) {
+func GetPNGFiles(dir string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func getPNGFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
-func importLatestCaptures(processDir, archiveDir string) ([]string, error) {
+func ImportLatestCaptures(processDir, archiveDir string) ([]string, error) {
 	srcDir, err := getRobloxCaptureDir()
 	if err != nil {
 		return nil, err
@@ -80,11 +80,11 @@ func importLatestCaptures(processDir, archiveDir string) ([]string, error) {
 		return nil, err
 	}
 
-	existing, err := getPNGFiles(processDir)
+	existing, err := GetPNGFiles(processDir)
 	if err == nil && len(existing) > 0 {
 		base := strings.TrimSuffix(filepath.Base(existing[0]), filepath.Ext(existing[0]))
 		archiveSubdir := filepath.Join(archiveDir, base)
-		for i := 2; isDirectory(archiveSubdir); i++ {
+		for i := 2; IsDirectory(archiveSubdir); i++ {
 			archiveSubdir = filepath.Join(archiveDir, fmt.Sprintf("%s-%d", base, i))
 		}
 		if err := os.MkdirAll(archiveSubdir, 0755); err != nil {
@@ -113,7 +113,7 @@ func importLatestCaptures(processDir, archiveDir string) ([]string, error) {
 func getRobloxCaptureDir() (string, error) {
 	if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
 		dir := filepath.Join(localAppData, "Roblox", "tmp-capture-storage")
-		if isDirectory(dir) {
+		if IsDirectory(dir) {
 			return dir, nil
 		}
 	}
@@ -125,7 +125,7 @@ func getRobloxCaptureDir() (string, error) {
 			filepath.Join(home, ".local", "share", "vinegar", "studio", "prefix", "drive_c", "users", os.Getenv("USER"), "AppData", "Local", "Roblox", "tmp-capture-storage"),
 		}
 		for _, dir := range candidates {
-			if isDirectory(dir) {
+			if IsDirectory(dir) {
 				return dir, nil
 			}
 		}
@@ -134,7 +134,7 @@ func getRobloxCaptureDir() (string, error) {
 	return "", fmt.Errorf("could not find Roblox capture directory")
 }
 
-func isDirectory(path string) bool {
+func IsDirectory(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
 }
@@ -158,7 +158,7 @@ func copyFile(src, dst string) error {
 	return out.Close()
 }
 
-func loadImage(path string) image.Image {
+func LoadImage(path string) image.Image {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
@@ -171,7 +171,7 @@ func loadImage(path string) image.Image {
 	return img
 }
 
-func parseHexColor(s string) (color.RGBA, error) {
+func ParseHexColor(s string) (color.RGBA, error) {
 	s = strings.TrimPrefix(s, "#")
 	if len(s) != 6 {
 		return color.RGBA{}, fmt.Errorf("invalid hex color length: %s", s)
