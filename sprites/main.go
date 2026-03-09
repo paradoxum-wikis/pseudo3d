@@ -250,19 +250,21 @@ func main() {
 
 			var minX, minY, maxX, maxY float32
 			if lockAspect {
-				if rawW < 0 {
+				signW := rawW < 0
+				signH := rawH < 0
+				if signW {
 					rawW = -rawW
 				}
-				if rawH < 0 {
+				if signH {
 					rawH = -rawH
 				}
 				side := min(rawW, rawH)
-				if rawW < 0 {
+				if signW {
 					minX = startImgX - side
 				} else {
 					minX = startImgX
 				}
-				if rawH < 0 {
+				if signH {
 					minY = startImgY - side
 				} else {
 					minY = startImgY
