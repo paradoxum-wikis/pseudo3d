@@ -182,14 +182,55 @@ func main() {
 	statusLabel := widget.NewLabel("No selection...")
 	statusLabel.Alignment = fyne.TextAlignCenter
 
+	const previewSize = float32(180)
+
+	makeCropPreview := func(clipW, clipH float32) (*canvas.Image, *fyne.Container) {
+		img := canvas.NewImageFromImage(nil)
+		img.FillMode = canvas.ImageFillContain
+		img.SetMinSize(fyne.NewSize(clipW, clipH))
+		return img, container.NewStack(img)
+	}
+
+	tdswPreview, tdswClip := makeCropPreview(previewSize, previewSize*0.9)
+	aewPreview, aewClip := makeCropPreview(previewSize*0.9, previewSize)
+	updatePreview := func() {
+		if !overlay.HasSelection {
+			tdswPreview.Image, aewPreview.Image = nil, nil
+			tdswPreview.Refresh()
+			aewPreview.Refresh()
+			return
+		}
+		nat := naturalSizes[currentImageIndex]
+		minX := min(max(int(math.Round(float64(overlay.MinX))), 0), nat.X)
+		minY := min(max(int(math.Round(float64(overlay.MinY))), 0), nat.Y)
+		maxX := min(max(int(math.Round(float64(overlay.MaxX))), 0), nat.X)
+		maxY := min(max(int(math.Round(float64(overlay.MaxY))), 0), nat.Y)
+		if maxX <= minX || maxY <= minY {
+			return
+		}
+		pb := previewImages[currentImageIndex].Bounds()
+		scaleX := float64(pb.Dx()) / float64(nat.X)
+		scaleY := float64(pb.Dy()) / float64(nat.Y)
+		cropped := imaging.Crop(previewImages[currentImageIndex], image.Rect(
+			int(float64(minX)*scaleX), int(float64(minY)*scaleY),
+			int(float64(maxX)*scaleX), int(float64(maxY)*scaleY),
+		))
+		tdswPreview.Image = cropped
+		aewPreview.Image = cropped
+		tdswPreview.Refresh()
+		aewPreview.Refresh()
+	}
+
 	updateStatus := func() {
 		if !overlay.HasSelection {
 			statusLabel.SetText("No selection...")
+			updatePreview()
 			return
 		}
 		statusLabel.SetText(fmt.Sprintf("Selected: %dx%d at (%d, %d)",
 			int(overlay.MaxX-overlay.MinX), int(overlay.MaxY-overlay.MinY),
 			int(overlay.MinX), int(overlay.MinY)))
+		updatePreview()
 	}
 
 	dragArea := &internal.InteractiveArea{
@@ -342,6 +383,13 @@ func main() {
 		w.Close()
 	})
 
+	previewPanel := container.NewVBox(
+		widget.NewLabel("TDS Wiki (10:9)"),
+		tdswClip,
+		widget.NewLabel("ALTERPEDIA (9:10)"),
+		aewClip,
+	)
+
 	controls := container.NewVBox(
 		container.NewBorder(nil, nil, nil, container.NewHBox(colorBox, helpBtn), toggleLockBtn),
 		container.NewBorder(nil, nil, nil, frameLabel, slider),
@@ -349,7 +397,9 @@ func main() {
 		statusLabel,
 	)
 
-	w.SetContent(container.NewBorder(nil, controls, nil, nil, imageContainer))
+	w.SetContent(container.NewBorder(nil, controls, nil, nil,
+		container.NewBorder(nil, nil, nil, previewPanel, imageContainer),
+	))
 
 	// arrow keys nudge
 	w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
