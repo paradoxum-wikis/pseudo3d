@@ -3,10 +3,10 @@
 In order to use this toolset, look at the ["Releases"](https://github.com/paradoxum-wikis/pseudo3d/releases) tab and download the latest build, then extract the archive to a location of your choice.
 
 The archives available for downloads are:
- - **pseudo3d-sprites-windows-amd64.zip**: Windows 64-bit.
- - **pseudo3d-sprites-linux-amd64.tar.xz**: Linux 64-bit.
- - **pseudo3d-sprites-macos-amd64.zip**: MacOS 64-bit.
- - **pseudo3d-sprites-macos-arm64.zip**: MacOS Apple Silicon.
+ - **pseudo3d-windows-amd64.zip**: Windows 64-bit.
+ - **pseudo3d-linux-amd64.tar.xz**: Linux 64-bit.
+ - **pseudo3d-macos-amd64.zip**: MacOS 64-bit.
+ - **pseudo3d-macos-arm64.zip**: MacOS Apple Silicon.
 
 ## Setting Up the Toolset
 

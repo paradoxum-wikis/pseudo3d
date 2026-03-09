@@ -127,29 +127,29 @@ jobs:
           done
 
           cd release-linux
-          tar -cJf ../pseudo3d-sprites-linux-amd64.tar.xz *
+          tar -cJf ../pseudo3d-linux-amd64.tar.xz *
           cd ..
 
           cd release-windows
-          zip -r ../pseudo3d-sprites-windows-amd64.zip *
+          zip -r ../pseudo3d-windows-amd64.zip *
           cd ..
 
           cd release-macos-amd64
-          zip -r ../pseudo3d-sprites-macos-amd64.zip *
+          zip -r ../pseudo3d-macos-amd64.zip *
           cd ..
 
           cd release-macos-arm64
-          zip -r ../pseudo3d-sprites-macos-arm64.zip *
+          zip -r ../pseudo3d-macos-arm64.zip *
           cd ..
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           files: |
-            pseudo3d-sprites-linux-amd64.tar.xz
-            pseudo3d-sprites-windows-amd64.zip
-            pseudo3d-sprites-macos-amd64.zip
-            pseudo3d-sprites-macos-arm64.zip
+            pseudo3d-linux-amd64.tar.xz
+            pseudo3d-windows-amd64.zip
+            pseudo3d-macos-amd64.zip
+            pseudo3d-macos-arm64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
