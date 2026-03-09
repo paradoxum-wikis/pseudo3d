@@ -157,8 +157,8 @@ func main() {
 	screenToImage := func(sx, sy float32) (float32, float32) {
 		nat := naturalSizes[currentImageIndex]
 		ox, oy, rw, rh := getRenderedImageBounds()
-		ix := float32(math.Max(0, math.Min(float64((sx-ox)/rw*float32(nat.X)), float64(nat.X))))
-		iy := float32(math.Max(0, math.Min(float64((sy-oy)/rh*float32(nat.Y)), float64(nat.Y))))
+		ix := min(max((sx-ox)/rw*float32(nat.X), 0), float32(nat.X))
+		iy := min(max((sy-oy)/rh*float32(nat.Y), 0), float32(nat.Y))
 		return ix, iy
 	}
 
@@ -170,8 +170,8 @@ func main() {
 	var colorPreview *canvas.Rectangle
 
 	updateColor := func(c color.Color) {
-		r, g, b, a := c.RGBA()
-		internal.ChromaKey = color.RGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)}
+		r, g, b, _ := c.RGBA()
+		internal.ChromaKey = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: 255}
 		internal.HexColor = fmt.Sprintf("%02X%02X%02X", internal.ChromaKey.R, internal.ChromaKey.G, internal.ChromaKey.B)
 		if colorPreview != nil {
 			colorPreview.FillColor = internal.ChromaKey
@@ -250,7 +250,13 @@ func main() {
 
 			var minX, minY, maxX, maxY float32
 			if lockAspect {
-				side := float32(math.Min(math.Abs(float64(rawW)), math.Abs(float64(rawH))))
+				if rawW < 0 {
+					rawW = -rawW
+				}
+				if rawH < 0 {
+					rawH = -rawH
+				}
+				side := min(rawW, rawH)
 				if rawW < 0 {
 					minX = startImgX - side
 				} else {
@@ -263,16 +269,8 @@ func main() {
 				}
 				maxX, maxY = minX+side, minY+side
 			} else {
-				if rawW >= 0 {
-					minX, maxX = startImgX, curImgX
-				} else {
-					minX, maxX = curImgX, startImgX
-				}
-				if rawH >= 0 {
-					minY, maxY = startImgY, curImgY
-				} else {
-					minY, maxY = curImgY, startImgY
-				}
+				minX, maxX = min(startImgX, curImgX), max(startImgX, curImgX)
+				minY, maxY = min(startImgY, curImgY), max(startImgY, curImgY)
 			}
 			if maxX > minX && maxY > minY {
 				overlay.SetSelection(minX, minY, maxX, maxY)
@@ -293,20 +291,12 @@ func main() {
 			px := int(float64(ix) / float64(nat.X) * float64(pb.Dx()))
 			py := int(float64(iy) / float64(nat.Y) * float64(pb.Dy()))
 
-			if px >= pb.Dx() {
-				px = pb.Dx() - 1
-			}
-			if py >= pb.Dy() {
-				py = pb.Dy() - 1
-			}
+			px = min(max(px, 0), pb.Dx()-1)
+			py = min(max(py, 0), pb.Dy()-1)
 
-			if px >= 0 && py >= 0 && px < pb.Dx() && py < pb.Dy() {
-				c := previewImg.At(pb.Min.X+px, pb.Min.Y+py)
-				updateColor(c)
-
-				colorPickMode = false
-				pickColorToggleBtn.SetText("Chroma Key Picker")
-			}
+			updateColor(previewImg.At(pb.Min.X+px, pb.Min.Y+py))
+			colorPickMode = false
+			pickColorToggleBtn.SetText("Chroma Key Picker")
 		},
 	}
 	dragArea.ExtendBaseWidget(dragArea)
