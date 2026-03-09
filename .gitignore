@@ -2,4 +2,5 @@ process/*
 !process/.gitkeep
 spritesheet.png
 safezone.cfg
-archive
+archive/*
+!archive/.gitkeep
