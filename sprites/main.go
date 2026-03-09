@@ -194,6 +194,10 @@ func main() {
 
 	tdswPreview, tdswClip := makeCropPreview(previewSize, previewSize*0.9) // 10:9
 	aewPreview, aewClip := makeCropPreview(previewSize*0.9, previewSize)   // 9:10
+
+	tdswCanvas := image.NewRGBA(image.Rect(0, 0, int(previewSize), int(previewSize*0.9)))
+	aewCanvas := image.NewRGBA(image.Rect(0, 0, int(previewSize*0.9), int(previewSize)))
+
 	updatePreview := func() {
 		if !overlay.HasSelection {
 			tdswPreview.Image, aewPreview.Image = nil, nil
@@ -217,9 +221,10 @@ func main() {
 			int(float64(maxX)*scaleX), int(float64(maxY)*scaleY),
 		))
 
-		fitAndCenter := func(img image.Image, w, h int) image.Image {
+		fitAndCenter := func(img image.Image, canvas *image.RGBA) image.Image {
+			w, h := canvas.Rect.Dx(), canvas.Rect.Dy()
 			scaled := imaging.Resize(img, 0, h, imaging.NearestNeighbor)
-			canvas := image.NewRGBA(image.Rect(0, 0, w, h))
+			draw.Draw(canvas, canvas.Bounds(), image.Transparent, image.Point{}, draw.Src)
 			b := scaled.Bounds()
 			dx := (w - b.Dx()) / 2
 			dy := (h - b.Dy()) / 2
@@ -227,8 +232,8 @@ func main() {
 			return canvas
 		}
 
-		tdswPreview.Image = fitAndCenter(cropped, int(previewSize), int(previewSize*0.9))
-		aewPreview.Image = fitAndCenter(cropped, int(previewSize*0.9), int(previewSize))
+		tdswPreview.Image = fitAndCenter(cropped, tdswCanvas)
+		aewPreview.Image = fitAndCenter(cropped, aewCanvas)
 		tdswPreview.Refresh()
 		aewPreview.Refresh()
 	}
