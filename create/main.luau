@@ -81,7 +81,7 @@ if CLEAR_WORKSPACE then
 end
 
 for _, part in ipairs(character:GetDescendants()) do
-	if part:IsA("BasePart") then part.Transparency = 1 part.Anchored = true end
+	if part:IsA("BasePart") then part.Transparency = 1; part.Anchored = true end
 end
 
 local rootPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
