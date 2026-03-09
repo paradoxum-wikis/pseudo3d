@@ -73,6 +73,10 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Restore executables permissions
+        run: |
+          chmod +x artifacts/pseudo3d*
+
       - name: Prepare release archives
         run: |
           mkdir -p release-linux release-windows release-macos-amd64 release-macos-arm64
