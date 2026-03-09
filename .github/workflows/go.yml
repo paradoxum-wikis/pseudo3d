@@ -17,9 +17,11 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('sprites/go.sum') }}
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev
-      - run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites ./...
+      - name: Build
+        working-directory: sprites
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ../bin/pseudo3d-sprites .
       - run: strip bin/pseudo3d-sprites
       - uses: actions/upload-artifact@v7
         with:
@@ -39,11 +41,12 @@ jobs:
           path: |
             C:/Users/runneradmin/go/pkg/mod
             C:/Users/runneradmin/AppData/Local/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('sprites/go.sum') }}
       - shell: pwsh
+        working-directory: sprites
         run: |
           $env:CGO_ENABLED = "1"; $env:GOOS = "windows"; $env:GOARCH = "amd64"
-          go build -ldflags "-s -w" -o bin/pseudo3d-sprites.exe ./...
+          go build -ldflags "-s -w" -o ../bin/pseudo3d-sprites.exe .
       - uses: actions/upload-artifact@v7
         with:
           name: windows-binary
@@ -62,11 +65,13 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-      - run: |
-          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-amd64 ./...
-          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o bin/pseudo3d-sprites-arm64 ./...
-          strip bin/pseudo3d-sprites-amd64 bin/pseudo3d-sprites-arm64
+          key: ${{ runner.os }}-go-${{ hashFiles('sprites/go.sum') }}
+      - name: Build
+        working-directory: sprites
+        run: |
+          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o ../bin/pseudo3d-sprites-amd64 .
+          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o ../bin/pseudo3d-sprites-arm64 .
+      - run: strip bin/pseudo3d-sprites-amd64 bin/pseudo3d-sprites-arm64
       - uses: actions/upload-artifact@v7
         with:
           name: macos-binary
