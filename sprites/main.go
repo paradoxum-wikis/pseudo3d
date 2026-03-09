@@ -191,8 +191,8 @@ func main() {
 		return img, container.NewStack(img)
 	}
 
-	tdswPreview, tdswClip := makeCropPreview(previewSize, previewSize*0.9)
-	aewPreview, aewClip := makeCropPreview(previewSize*0.9, previewSize)
+	tdswPreview, tdswClip := makeCropPreview(previewSize, previewSize*0.9) // 10:9
+	aewPreview, aewClip := makeCropPreview(previewSize*0.9, previewSize)   // 9:10
 	updatePreview := func() {
 		if !overlay.HasSelection {
 			tdswPreview.Image, aewPreview.Image = nil, nil
@@ -323,6 +323,7 @@ func main() {
 		overlay.NatH = float32(nat.Y)
 		overlay.Refresh()
 		frameLabel.SetText(fmt.Sprintf("Frame %d / %d", currentImageIndex+1, len(files)))
+		updatePreview()
 	}
 
 	toggleLockBtn := widget.NewButton("Square Ratio", nil)
