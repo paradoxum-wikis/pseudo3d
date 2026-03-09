@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
 	"log"
 	"math"
 	"time"
@@ -188,7 +189,7 @@ func main() {
 		img := canvas.NewImageFromImage(nil)
 		img.FillMode = canvas.ImageFillContain
 		img.SetMinSize(fyne.NewSize(clipW, clipH))
-		return img, container.NewStack(img)
+		return img, container.NewCenter(img)
 	}
 
 	tdswPreview, tdswClip := makeCropPreview(previewSize, previewSize*0.9) // 10:9
@@ -215,8 +216,19 @@ func main() {
 			int(float64(minX)*scaleX), int(float64(minY)*scaleY),
 			int(float64(maxX)*scaleX), int(float64(maxY)*scaleY),
 		))
-		tdswPreview.Image = cropped
-		aewPreview.Image = cropped
+
+		fitAndCenter := func(img image.Image, w, h int) image.Image {
+			scaled := imaging.Resize(img, 0, h, imaging.Lanczos)
+			canvas := image.NewRGBA(image.Rect(0, 0, w, h))
+			b := scaled.Bounds()
+			dx := (w - b.Dx()) / 2
+			dy := (h - b.Dy()) / 2
+			draw.Draw(canvas, image.Rectangle{Min: image.Pt(dx, dy), Max: image.Pt(dx, dy).Add(b.Size())}, scaled, b.Min, draw.Src)
+			return canvas
+		}
+
+		tdswPreview.Image = fitAndCenter(cropped, int(previewSize), int(previewSize*0.9))
+		aewPreview.Image = fitAndCenter(cropped, int(previewSize*0.9), int(previewSize))
 		tdswPreview.Refresh()
 		aewPreview.Refresh()
 	}
