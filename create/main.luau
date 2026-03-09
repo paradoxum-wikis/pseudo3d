@@ -158,8 +158,9 @@ if BLOOM_INTENSITY ~= nil then
 	bloom.Intensity = BLOOM_INTENSITY
 end
 
+local backdrop
 if BACKDROP then
-	local backdrop = Instance.new("Part", workspace)
+	backdrop = Instance.new("Part", workspace)
 	backdrop.Size = Vector3.new(2000, 2000, 1)
 	backdrop.Anchored = true
 	backdrop.CanCollide = false
