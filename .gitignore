@@ -1,6 +1,7 @@
 sprites/process/*
 !sprites/process/.gitkeep
-spritesheet.png
-safezone.cfg
+sprites/spritesheet.png
+sprites/safezone.cfg
 sprites/archive/*
 !sprites/archive/.gitkeep
+sprites/main_test.go
