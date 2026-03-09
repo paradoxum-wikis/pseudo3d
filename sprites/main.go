@@ -197,7 +197,7 @@ func main() {
 			if colorPickMode {
 				return desktop.CrosshairCursor
 			}
-			return desktop.DefaultCursor
+			return desktop.PointerCursor
 		},
 		OnDrag: func(e *fyne.DragEvent) {
 			if isNewDrag {
