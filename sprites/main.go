@@ -86,7 +86,7 @@ func main() {
 				return
 			}
 			files = imported
-			fmt.Printf("Imported %d frame(s) into %s\n\n", len(files), internal.InputDir)
+			fmt.Printf("Imported %d frames into %s\n\n", len(files), internal.InputDir)
 		default:
 			return
 		}
