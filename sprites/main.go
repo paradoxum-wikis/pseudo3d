@@ -76,14 +76,14 @@ func main() {
 		case "1":
 			if !hasFiles {
 				fmt.Printf("No PNG files found in %s\n", internal.InputDir)
-				time.Sleep(3 * time.Second)
+				time.Sleep(1 * time.Second)
 				return
 			}
 		case "2":
 			imported, err := internal.ImportLatestCaptures(internal.InputDir, "archive")
 			if err != nil {
 				fmt.Printf("Import failed: %v\n", err)
-				time.Sleep(3 * time.Second)
+				time.Sleep(1 * time.Second)
 				return
 			}
 			files = imported
@@ -93,7 +93,7 @@ func main() {
 		}
 	} else if !hasFiles {
 		fmt.Printf("No PNG files found in %s\n", internal.InputDir)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 		return
 	}
 
