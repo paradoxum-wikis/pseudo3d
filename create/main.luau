@@ -86,7 +86,6 @@ for _, part in ipairs(character:GetDescendants()) do
 end
 
 local rootPart = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
-if rootPart then rootPart.Anchored = true end
 
 local function getFrontAngle()
 	if not rootPart then return 0 end

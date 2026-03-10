@@ -1158,6 +1158,27 @@ gcLgc4RKxr21zq2UlJSM]]></BinaryString>
 			<BinaryString name="Tags" />
 			<UniqueId name="UniqueId">528ea4a3c1ad757109c1492200000383</UniqueId>
 		</Properties>
+		<Item class="Script" referent="RBX2171765A4ACC407AA7AE68261F1BEE23">
+			<Properties>
+				<ProtectedString
+					name="Source"
+				><![CDATA[for _, p in ipairs(workspace:WaitForChild("Target"):GetDescendants()) do
+	if p:IsA("BasePart") then p.Anchored = true end
+end]]></ProtectedString>
+				<bool name="Disabled">false</bool>
+				<Content name="LinkedSource"><null /></Content>
+				<token name="RunContext">0</token>
+				<string name="ScriptGuid">{D06E3C73-73C0-4175-8B05-49236E203591}</string>
+				<BinaryString name="AttributesSerialize" />
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">Script</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags" />
+				<UniqueId name="UniqueId">5e358fb7e9d3161309c14c3c00001478</UniqueId>
+			</Properties>
+		</Item>
 	</Item>
 	<Item class="ServerStorage" referent="RBXFCE1FB3BD5E74B03B310FF1A58FC933E">
 		<Properties>
