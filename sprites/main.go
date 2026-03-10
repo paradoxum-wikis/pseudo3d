@@ -60,36 +60,46 @@ func main() {
 	hasFiles := len(files) > 0
 
 	if !internal.SkipMenu {
-		fmt.Println("1) Use existing files in \"process\" folder")
-		fmt.Println("2) Import latest Roblox capture (24 frames)")
-		fmt.Println("3) Exit")
-		if !hasFiles {
-			fmt.Printf("\nNo PNG files found in %s\n", internal.InputDir)
-			fmt.Println("TIP: Run with -help (or -h) to see all available flags.")
-		}
-		fmt.Print("Choose an option: ")
-
-		var choice string
-		fmt.Scanln(&choice)
-
-		switch choice {
-		case "1":
+		for {
+			fmt.Println("1) Use existing files in \"process\" folder")
+			fmt.Println("2) Import latest Roblox capture (24 frames)")
+			fmt.Println("3) Exit")
 			if !hasFiles {
-				fmt.Printf("No PNG files found in %s\n", internal.InputDir)
-				time.Sleep(1 * time.Second)
-				return
+				fmt.Printf("\nNo PNG files found in %s\n", internal.InputDir)
+				fmt.Println("TIP: Run with -help (or -h) to see all available flags.")
 			}
-		case "2":
-			imported, err := internal.ImportLatestCaptures(internal.InputDir, "archive")
-			if err != nil {
-				fmt.Printf("Import failed: %v\n", err)
-				time.Sleep(1 * time.Second)
+			fmt.Print("Choose an option: ")
+
+			var choice string
+			fmt.Scanln(&choice)
+
+			switch choice {
+			case "1":
+				if !hasFiles {
+					fmt.Print("\033[H\033[2J")
+					fmt.Printf("No PNG files found in %s\n", internal.InputDir)
+					fmt.Println("Please add PNG files and try again.")
+					time.Sleep(1 * time.Second)
+					continue
+				}
+			case "2":
+				imported, err := internal.ImportLatestCaptures(internal.InputDir, "archive")
+				if err != nil {
+					fmt.Printf("Import failed: %v\n", err)
+					fmt.Println("Please try again.")
+					time.Sleep(1 * time.Second)
+					continue
+				}
+				files = imported
+				fmt.Printf("Imported %d frames into %s\n\n", len(files), internal.InputDir)
+				hasFiles = true
+			case "3":
 				return
+			default:
+				fmt.Println("Invalid option, please try again.")
+				continue
 			}
-			files = imported
-			fmt.Printf("Imported %d frames into %s\n\n", len(files), internal.InputDir)
-		default:
-			return
+			break
 		}
 	} else if !hasFiles {
 		fmt.Printf("No PNG files found in %s\n", internal.InputDir)
