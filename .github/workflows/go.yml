@@ -97,19 +97,19 @@ jobs:
 
       - name: Generate RBXLX from Luau
         run: |
-          LUAU_CONTENT=$(cat create/main.luau)
-          awk -v r="$LUAU_CONTENT" '{gsub(/\$\(cat main\.luau\)/, r)}1' create/template.xml > outtahere.rbxlx
+          LUAU_CONTENT=$(cat maker/main.luau)
+          awk -v r="$LUAU_CONTENT" '{gsub(/\$\(cat main\.luau\)/, r)}1' maker/template.xml > outtahere.rbxlx
 
       - name: Convert RBXLX to RBXL
         uses: t7ru/rbx-convert-action@v0.2.0
         with:
           input: outtahere.rbxlx
-          output: pseudo3d-create.rbxl
+          output: pseudo3d-maker.rbxl
 
       - name: Package archives
         run: |
           for folder in release-linux release-windows release-macos-amd64 release-macos-arm64; do
-            cp pseudo3d-create.rbxl "$folder/pseudo3d-create.rbxl"
+            cp pseudo3d-maker.rbxl "$folder/pseudo3d-maker.rbxl"
           done
 
           cd release-linux

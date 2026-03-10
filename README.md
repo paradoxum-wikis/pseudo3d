@@ -10,7 +10,7 @@ The archives available for downloads are:
 
 ## Setting Up the Toolset
 
-1. Open the folder in your file explorer, and you will see a "pseudo3d-create.rbxlx" file.
+1. Open the folder in your file explorer, and you will see a "pseudo3d-maker.rbxlx" file.
 2. Open that file and you will be loaded into Roblox Studio, you should now see a place that is pre-configured.
 
 ## Capturing the Frames
@@ -30,7 +30,7 @@ Workspace
 
 You can run the game now (F5), and the toolset will automatically angle your camera and whatnot. There are control guides at the top of your screen to help you as well.
 
-There are also more configurations you can change inside your "pseudo3d-create" `LocalScript`, such as the backdrop color, etc., but for most, if not all, use cases on our wikis, it isn't necessary to change any of those.
+There are also more configurations you can change inside your "pseudo3d-maker" `LocalScript`, such as the backdrop color, etc., but for most, if not all, use cases on our wikis, it isn't necessary to change any of those.
 
 Press Q and you can start the capturing process. Note that your cursor **will be hidden**, so you will have to estimate where your cursor is when you want to click "Save."
 
@@ -83,7 +83,7 @@ Here is a full list of available flags:
 | `-in` | `./process` | Input directory containing your PNG frames. |
 | `-out` | `spritesheet.png` | Output filename for the final spritesheet. |
 | `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
-| `-color-bg` | `FC00EC` | Hex color to remove as the background; should match `BACKDROP_COLOR` in your "pseudo3d-create" `LocalScript`. |
+| `-color-bg` | `FC00EC` | Hex color to remove as the background; should match `BACKDROP_COLOR` in your "pseudo3d-maker" `LocalScript`. |
 | `-skip-prescale` | `false` | Prescale preview images to make the UI perform better; the original files are still used for processing. |
 | `-skip-menu` | `false` | Skip the choice menu in the terminal and proceed automatically. |
 
