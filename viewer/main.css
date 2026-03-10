@@ -1,0 +1,45 @@
+/*
+ * Ported from [[w:c:alter-ego:MediaWiki:Fandomdesktop.css]]
+ * t7ru [[User:Gabonnie]]
+ */
+.pseudo-3d-viewport {
+    position: relative;
+    left: -1.1em;
+    cursor: ew-resize;
+    width: 300px;
+    height: 300px;
+    overflow: hidden;
+
+    img {
+        width: 2400%;
+        height: 100%;
+    }
+}
+
+.pi-item {
+    &:has(> .pi-data-value > .pseudo-3d-viewport) {
+        position: relative;
+        padding: 0;
+        background: url("https://static.wikia.nocookie.net/roblox/images/1/13/DefaultSkybox2021.png/revision/latest?cb=20250114020329&format=webp")
+            center / cover;
+
+        &::after {
+            content: "Drag Image To Rotate";
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            margin: 0.5em;
+            color: white;
+            background: oklch(0 0 0 / 40%);
+            padding: 0.2em 0.4em;
+            border-radius: 0.2em;
+            pointer-events: none;
+            transition: opacity 0.25s;
+            font-size: 0.85em;
+        }
+    }
+
+    &:has(> .pi-data-value > .pseudo-3d-viewport:hover)::after {
+        opacity: 0;
+    }
+}
