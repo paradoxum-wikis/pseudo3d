@@ -31,7 +31,7 @@ func init() {
 	flag.StringVar(&internal.InputDir, "in", "./process", "Input directory containing PNG frames")
 	flag.StringVar(&internal.OutputFile, "out", "spritesheet.png", "Output spritesheet filename")
 	flag.BoolVar(&internal.ErodeEdges, "erode", false, "Aggressively trim 1 pixel of alpha from edges to kill residue")
-	flag.StringVar(&internal.HexColor, "color-bg", "FC00EC", "Hex color code to remove as background")
+	flag.StringVar(&internal.HexColor, "color-bg", "DF03DF", "Hex color code to remove as background")
 	flag.BoolVar(&internal.SkipPrescale, "skip-prescale", false, "Prescale preview images to "+fmt.Sprintf("%d", internal.PreviewMaxPx)+"px max for faster UI (originals are still used for processing)")
 	flag.BoolVar(&internal.SkipMenu, "skip-menu", false, "Skip the terminal startup menu and use existing files in the process folder")
 }
