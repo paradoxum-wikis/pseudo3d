@@ -209,6 +209,22 @@ func main() {
 	tdswCanvas := image.NewRGBA(image.Rect(0, 0, int(previewSize), int(previewSize*0.9)))
 	aewCanvas := image.NewRGBA(image.Rect(0, 0, int(previewSize*0.9), int(previewSize)))
 
+	fillCheckerboard := func(canvas *image.RGBA) {
+		const size = 10
+		color1 := image.NewUniform(color.RGBA{220, 220, 220, 255})
+		color2 := image.NewUniform(color.RGBA{255, 255, 255, 255})
+		w, h := canvas.Rect.Dx(), canvas.Rect.Dy()
+		for y := 0; y < h; y += size {
+			for x := 0; x < w; x += size {
+				c := color1
+				if ((x/size)+(y/size))&1 != 0 {
+					c = color2
+				}
+				draw.Draw(canvas, image.Rect(x, y, x+size, y+size), c, image.Point{}, draw.Src)
+			}
+		}
+	}
+
 	updatePreview := func() {
 		if !overlay.HasSelection {
 			tdswPreview.Image, aewPreview.Image = nil, nil
@@ -235,11 +251,11 @@ func main() {
 		fitAndCenter := func(img image.Image, canvas *image.RGBA) image.Image {
 			w, h := canvas.Rect.Dx(), canvas.Rect.Dy()
 			scaled := imaging.Resize(img, w, 0, imaging.NearestNeighbor)
-			draw.Draw(canvas, canvas.Bounds(), image.Transparent, image.Point{}, draw.Src)
+			fillCheckerboard(canvas)
 			b := scaled.Bounds()
 			dx := (w - b.Dx()) / 2
 			dy := (h - b.Dy()) / 2
-			draw.Draw(canvas, image.Rectangle{Min: image.Pt(dx, dy), Max: image.Pt(dx, dy).Add(b.Size())}, scaled, b.Min, draw.Src)
+			draw.Draw(canvas, image.Rectangle{Min: image.Pt(dx, dy), Max: image.Pt(dx, dy).Add(b.Size())}, scaled, b.Min, draw.Over)
 			return canvas
 		}
 
