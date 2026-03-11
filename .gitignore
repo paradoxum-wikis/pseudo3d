@@ -5,3 +5,4 @@ sprites/safezone.cfg
 sprites/archive/*
 !sprites/archive/.gitkeep
 sprites/main_test.go
+sprites/configuration.cfg

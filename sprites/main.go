@@ -38,6 +38,7 @@ func init() {
 
 func main() {
 	flag.Parse()
+	internal.LoadConfiguration()
 
 	var err error
 	internal.ChromaKey, err = internal.ParseHexColor(internal.HexColor)
