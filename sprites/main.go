@@ -234,7 +234,7 @@ func main() {
 
 		fitAndCenter := func(img image.Image, canvas *image.RGBA) image.Image {
 			w, h := canvas.Rect.Dx(), canvas.Rect.Dy()
-			scaled := imaging.Resize(img, 0, h, imaging.NearestNeighbor)
+			scaled := imaging.Resize(img, w, 0, imaging.NearestNeighbor)
 			draw.Draw(canvas, canvas.Bounds(), image.Transparent, image.Point{}, draw.Src)
 			b := scaled.Bounds()
 			dx := (w - b.Dx()) / 2
