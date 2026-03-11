@@ -90,7 +90,6 @@ Here is a full list of available flags:
 | `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
 | `-color-bg` | `DF03DF` | Hex color to remove as the background; should match `BACKDROP_COLOR` in your "pseudo3d-maker" `LocalScript`. |
 | `-skip-prescale` | `false` | Prescale preview images to make the UI perform better; the original files are still used for processing. |
-| `-skip-menu` | `false` | Skip the choice menu in the terminal and proceed automatically. |
 
 *You can also access the above list by running the executable with the `-help` (`-h`) flag.*
 
