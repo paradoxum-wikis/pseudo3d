@@ -59,7 +59,7 @@ The program will close the UI and immediately begin batch processing all frames 
 ## Flags Reference
 
 > [!TIP]
-> After your first open of the program, you will see a `configuration.cfg` file in the root directory. All flags below will work here and be persisted for the next runs, so you don't have to type them in every time you want to run the program with those flags.
+> After your first open of the program, you will see a `configuration.cfg` file in the root directory. All flags below will work here and be persisted for any subsequent runs, so you don't have to type them in every time you want to run the program with flags.
 >
 > Manually inserting flags with the terminal will take priority over the configuration file for that run, but it won't permanently change the values inside of the file.
 
@@ -94,5 +94,5 @@ Here is a full list of available flags:
 
 *You can also access the above list by running the executable with the `-help` (`-h`) flag.*
 
-# Terms of Use
+## Terms of Use
 This toolset (with the exception of [Viewer](./viewer)) is source-available to invited members and is **NOT** open-source. You may not redistribute the source code or its binaries without explicit permission from the author. For more information, please contact t7ru directly.
