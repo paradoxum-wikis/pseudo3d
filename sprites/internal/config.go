@@ -43,7 +43,6 @@ func SaveSafeZoneConfig() {
 
 	newLines := []string{}
 	for line := range strings.SplitSeq(string(content), "\n") {
-	for _, line := range lines {
 		if !strings.HasPrefix(line, "safezone=") {
 			newLines = append(newLines, line)
 		}
