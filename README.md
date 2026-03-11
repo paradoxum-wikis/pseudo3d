@@ -88,3 +88,6 @@ Here is a full list of available flags:
 | `-skip-menu` | `false` | Skip the choice menu in the terminal and proceed automatically. |
 
 *You can also access the above list by running the executable with the `-help` (`-h`) flag.*
+
+# Terms of Use
+This toolset (with the exception of [Viewer](./viewer)) is source-available to invited members and is **NOT** open-source. You may not redistribute the source code or its binaries without explicit permission from the author. For more information, please contact t7ru directly.
