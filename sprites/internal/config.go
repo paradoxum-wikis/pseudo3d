@@ -38,20 +38,22 @@ type SafeZone struct {
 var GlobalSafeZone SafeZone
 
 func SaveSafeZoneConfig() {
-	data := fmt.Sprintf("%d,%d,%d,%d\n",
-		GlobalSafeZone.MinX, GlobalSafeZone.MinY,
-		GlobalSafeZone.MaxX, GlobalSafeZone.MaxY)
-	os.WriteFile("safezone.cfg", []byte(data), 0644)
-}
+	LoadConfiguration()
+	filename := "configuration.cfg"
+	content, _ := os.ReadFile(filename)
 
-func LoadSafeZoneConfig() {
-	data, err := os.ReadFile("safezone.cfg")
-	if err != nil {
-		return
+	newLines := []string{}
+	for line := range strings.SplitSeq(string(content), "\n") {
+	for _, line := range lines {
+		if !strings.HasPrefix(line, "safezone=") {
+			newLines = append(newLines, line)
+		}
 	}
-	var minX, minY, maxX, maxY int
-	fmt.Sscanf(string(data), "%d,%d,%d,%d", &minX, &minY, &maxX, &maxY)
-	GlobalSafeZone = SafeZone{MinX: minX, MinY: minY, MaxX: maxX, MaxY: maxY, Active: true}
+
+	safeZoneStr := fmt.Sprintf("safezone=%d,%d,%d,%d", GlobalSafeZone.MinX, GlobalSafeZone.MinY, GlobalSafeZone.MaxX, GlobalSafeZone.MaxY)
+	newLines = append(newLines, safeZoneStr)
+
+	os.WriteFile(filename, []byte(strings.Join(newLines, "\n")), 0644)
 }
 
 func LoadConfiguration() {
@@ -83,7 +85,12 @@ func LoadConfiguration() {
 		}
 		if key, val, ok := strings.Cut(line, "="); ok {
 			key, val = strings.TrimSpace(key), strings.TrimSpace(val)
-			if !setFlags[key] && flag.Lookup(key) != nil {
+			if key == "safezone" {
+				var minX, minY, maxX, maxY int
+				if _, err := fmt.Sscanf(val, "%d,%d,%d,%d", &minX, &minY, &maxX, &maxY); err == nil {
+					GlobalSafeZone = SafeZone{MinX: minX, MinY: minY, MaxX: maxX, MaxY: maxY, Active: true}
+				}
+			} else if !setFlags[key] && flag.Lookup(key) != nil {
 				flag.Set(key, val)
 			}
 		}

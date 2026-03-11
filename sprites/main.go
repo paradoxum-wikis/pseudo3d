@@ -425,6 +425,15 @@ func main() {
 				nat := naturalSizes[0]
 				overlay.NatW = float32(nat.X)
 				overlay.NatH = float32(nat.Y)
+
+				if internal.GlobalSafeZone.Active {
+					overlay.SetSelection(
+						float32(internal.GlobalSafeZone.MinX),
+						float32(internal.GlobalSafeZone.MinY),
+						float32(internal.GlobalSafeZone.MaxX),
+						float32(internal.GlobalSafeZone.MaxY),
+					)
+				}
 				overlay.Refresh()
 
 				slider.Max = float64(len(files) - 1)
@@ -450,6 +459,9 @@ func main() {
 		go func() {
 			imported, err := internal.ImportLatestCaptures(internal.InputDir, "archive")
 			if err == nil && len(imported) > 0 {
+				internal.GlobalSafeZone.Active = false
+				internal.SaveSafeZoneConfig()
+				overlay.HasSelection = false
 				loadFrames(imported, importProgress.SetValue)
 			}
 

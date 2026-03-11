@@ -18,7 +18,7 @@ import (
 
 func RunBatchProcessing(progressCallback func(current, total int)) error {
 	OutputFile = strings.TrimSuffix(OutputFile, ".png") + ".png"
-	LoadSafeZoneConfig()
+
 	if !GlobalSafeZone.Active {
 		return fmt.Errorf("no safe zone configured")
 	}
