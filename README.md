@@ -58,6 +58,11 @@ The program will close the UI and immediately begin batch processing all frames 
 
 ## Flags Reference
 
+> [!TIP]
+> After your first open of the program, you will see a `configuration.cfg` file in the root directory. All flags below will work here and be persisted for the next runs, so you don't have to type them in every time you want to run the program with those flags.
+>
+> Manually inserting flags with the terminal will take priority over the configuration file for that run, but it won't permanently change the values inside of the file.
+
 For advanced users, there are some additional options you can configure to customize the processing behavior. These options are passed as flags when running the executable through a terminal. For example:
 
 Let's say, if you've already configured your safe zone and just want to re-run the batch processing without opening the UI again, maybe because the previous run wasn't up to your liking, you can use the `-process` flag:
