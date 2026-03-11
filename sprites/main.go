@@ -8,6 +8,7 @@ import (
 	"image/draw"
 	"log"
 	"math"
+	"os"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -16,9 +17,9 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/disintegration/imaging"
-	"github.com/schollz/progressbar/v3"
 
 	"pseudo3d-sprites/internal"
 )
@@ -47,64 +48,10 @@ func main() {
 	}
 
 	if internal.ProcessMode {
-		internal.RunBatchProcessing()
-		return
-	}
-
-	files, err := internal.GetPNGFiles(internal.InputDir)
-	if err != nil {
-		fmt.Printf("Could not read %s: %v\n", internal.InputDir, err)
-		time.Sleep(3 * time.Second)
-		return
-	}
-
-	hasFiles := len(files) > 0
-
-	if !internal.SkipMenu {
-		for {
-			fmt.Println("1) Use existing files in \"process\" folder")
-			fmt.Println("2) Import latest Roblox capture (24 frames)")
-			fmt.Println("3) Exit")
-			if !hasFiles {
-				fmt.Printf("\nNo PNG files found in %s\n", internal.InputDir)
-				fmt.Println("TIP: Run with -help (or -h) to see all available flags.")
-			}
-			fmt.Print("Choose an option: ")
-
-			var choice string
-			fmt.Scanln(&choice)
-
-			switch choice {
-			case "1":
-				if !hasFiles {
-					fmt.Print("\033[H\033[2J")
-					fmt.Printf("No PNG files found in %s\n", internal.InputDir)
-					fmt.Println("Please add PNG files and try again.")
-					time.Sleep(1 * time.Second)
-					continue
-				}
-			case "2":
-				imported, err := internal.ImportLatestCaptures(internal.InputDir, "archive")
-				if err != nil {
-					fmt.Printf("Import failed: %v\n", err)
-					fmt.Println("Please try again.")
-					time.Sleep(1 * time.Second)
-					continue
-				}
-				files = imported
-				fmt.Printf("Imported %d frames into %s\n\n", len(files), internal.InputDir)
-				hasFiles = true
-			case "3":
-				return
-			default:
-				fmt.Println("Invalid option, please try again.")
-				continue
-			}
-			break
+		if err := internal.RunBatchProcessing(nil); err != nil {
+			fmt.Printf("Processing failed: %v\n", err)
+			os.Exit(1)
 		}
-	} else if !hasFiles {
-		fmt.Printf("No PNG files found in %s\n", internal.InputDir)
-		time.Sleep(1 * time.Second)
 		return
 	}
 
@@ -112,40 +59,20 @@ func main() {
 	w := a.NewWindow("Safe Zone Selector")
 	w.Resize(fyne.NewSize(900, 700))
 
-	if !internal.SkipPrescale {
-		fmt.Printf("Preloading %d frames (prescaled to max %dpx)...\n", len(files), internal.PreviewMaxPx)
-	} else {
-		fmt.Printf("Preloading %d frames (full resolution)...\n", len(files))
-	}
-
-	naturalSizes := make([]image.Point, len(files))
-	previewImages := make([]image.Image, len(files))
-
-	{
-		bar := progressbar.Default(int64(len(files)), "Loading frames")
-		for i, f := range files {
-			full := internal.LoadImage(f)
-			b := full.Bounds()
-			naturalSizes[i] = image.Pt(b.Dx(), b.Dy())
-
-			if !internal.SkipPrescale {
-				previewImages[i] = imaging.Fit(full, internal.PreviewMaxPx, internal.PreviewMaxPx, imaging.Lanczos)
-			} else {
-				previewImages[i] = full
-			}
-			bar.Add(1)
-		}
-		fmt.Println()
-	}
-
+	var files []string
+	var naturalSizes []image.Point
+	var previewImages []image.Image
 	currentImageIndex := 0
 
-	imgWidget := canvas.NewImageFromImage(previewImages[currentImageIndex])
+	imgWidget := canvas.NewImageFromImage(nil)
 	imgWidget.FillMode = canvas.ImageFillContain
 
 	overlay := internal.NewSelectionOverlay()
 
 	getRenderedImageBounds := func() (offX, offY, rendW, rendH float32) {
+		if len(naturalSizes) == 0 {
+			return 0, 0, 0, 0
+		}
 		nat := naturalSizes[currentImageIndex]
 		containerSize := imgWidget.Size()
 		scaleX := containerSize.Width / float32(nat.X)
@@ -162,11 +89,11 @@ func main() {
 	}
 
 	overlay.GetImageBounds = getRenderedImageBounds
-	nat0 := naturalSizes[0]
-	overlay.NatW = float32(nat0.X)
-	overlay.NatH = float32(nat0.Y)
 
 	screenToImage := func(sx, sy float32) (float32, float32) {
+		if len(naturalSizes) == 0 {
+			return 0, 0
+		}
 		nat := naturalSizes[currentImageIndex]
 		ox, oy, rw, rh := getRenderedImageBounds()
 		ix := min(max((sx-ox)/rw*float32(nat.X), 0), float32(nat.X))
@@ -226,7 +153,7 @@ func main() {
 	}
 
 	updatePreview := func() {
-		if !overlay.HasSelection {
+		if !overlay.HasSelection || len(naturalSizes) == 0 {
 			tdswPreview.Image, aewPreview.Image = nil, nil
 			tdswPreview.Refresh()
 			aewPreview.Refresh()
@@ -265,7 +192,8 @@ func main() {
 		aewPreview.Refresh()
 	}
 
-	updateStatus := func() {
+	var lastPreview time.Time
+	updateStatus := func(force bool) {
 		if !overlay.HasSelection {
 			statusLabel.SetText("No selection...")
 			updatePreview()
@@ -274,7 +202,11 @@ func main() {
 		statusLabel.SetText(fmt.Sprintf("Selected: %dx%d at (%d, %d)",
 			int(overlay.MaxX-overlay.MinX), int(overlay.MaxY-overlay.MinY),
 			int(overlay.MinX), int(overlay.MinY)))
-		updatePreview()
+
+		if force || time.Since(lastPreview) > 16*time.Millisecond {
+			updatePreview()
+			lastPreview = time.Now()
+		}
 	}
 
 	dragArea := &internal.InteractiveArea{
@@ -320,12 +252,12 @@ func main() {
 			}
 			if maxX > minX && maxY > minY {
 				overlay.SetSelection(minX, minY, maxX, maxY)
-				updateStatus()
+				updateStatus(false)
 			}
 		},
-		OnDragEnd: func() { isNewDrag = true; updateStatus() },
+		OnDragEnd: func() { isNewDrag = true; updateStatus(true) },
 		OnTap: func(e *fyne.PointEvent) {
-			if !colorPickMode {
+			if !colorPickMode || len(naturalSizes) == 0 {
 				return
 			}
 			ix, iy := screenToImage(e.Position.X, e.Position.Y)
@@ -349,10 +281,13 @@ func main() {
 
 	imageContainer := container.NewStack(imgWidget, overlay, dragArea)
 
-	frameLabel := widget.NewLabel(fmt.Sprintf("Frame 1 / %d", len(files)))
+	frameLabel := widget.NewLabel("Frame 0 / 0")
 
-	slider := widget.NewSlider(0, float64(len(files)-1))
+	slider := widget.NewSlider(0, 0)
 	slider.OnChanged = func(v float64) {
+		if len(files) == 0 {
+			return
+		}
 		newIndex := int(v)
 		if newIndex == currentImageIndex {
 			return
@@ -405,8 +340,14 @@ func main() {
 			w)
 	})
 
-	saveBtn := widget.NewButton("Save & Process!", func() {
-		if !overlay.HasSelection || overlay.MinX == overlay.MaxX {
+	var saveBtn *widget.Button
+	progressBar := widget.NewProgressBar()
+	progressBar.Hide()
+
+	processBox := container.NewStack(saveBtn)
+
+	saveBtn = widget.NewButton("Save & Process!", func() {
+		if !overlay.HasSelection || overlay.MinX == overlay.MaxX || len(files) == 0 {
 			return
 		}
 		internal.GlobalSafeZone = internal.SafeZone{
@@ -417,8 +358,30 @@ func main() {
 			Active: true,
 		}
 		internal.SaveSafeZoneConfig()
-		w.Close()
+
+		saveBtn.Hide()
+		progressBar.SetValue(0)
+		progressBar.Show()
+
+		go func() {
+			err := internal.RunBatchProcessing(func(current, total int) {
+				progressBar.SetValue(float64(current) / float64(total))
+			})
+
+			fyne.Do(func() {
+				saveBtn.Show()
+				progressBar.Hide()
+
+				if err != nil {
+					dialog.ShowError(err, w)
+				} else {
+					dialog.ShowInformation("Success", fmt.Sprintf("Heeho! Spritesheet saved as %s (%d frames)!", internal.OutputFile, len(files)), w)
+				}
+			})
+		}()
 	})
+
+	processBox.Objects = []fyne.CanvasObject{saveBtn, progressBar}
 
 	previewPanel := container.NewVBox(
 		widget.NewLabel("TDS Wiki (10:9)"),
@@ -427,10 +390,90 @@ func main() {
 		aewClip,
 	)
 
+	loadFrames := func(newFiles []string, progressCallback func(float64)) {
+		shinNaturalSizes := make([]image.Point, len(newFiles))
+		shinPreviewImages := make([]image.Image, len(newFiles))
+
+		for i, f := range newFiles {
+			if progressCallback != nil {
+				progressCallback(float64(i) / float64(len(newFiles)))
+			}
+			full := internal.LoadImage(f)
+			b := full.Bounds()
+			shinNaturalSizes[i] = image.Pt(b.Dx(), b.Dy())
+
+			if !internal.SkipPrescale {
+				shinPreviewImages[i] = imaging.Fit(full, internal.PreviewMaxPx, internal.PreviewMaxPx, imaging.Lanczos)
+			} else {
+				shinPreviewImages[i] = full
+			}
+		}
+		if progressCallback != nil {
+			progressCallback(1.0)
+		}
+
+		fyne.Do(func() {
+			files = newFiles
+			naturalSizes = shinNaturalSizes
+			previewImages = shinPreviewImages
+
+			if len(files) > 0 {
+				currentImageIndex = 0
+				imgWidget.Image = previewImages[0]
+				imgWidget.Refresh()
+
+				nat := naturalSizes[0]
+				overlay.NatW = float32(nat.X)
+				overlay.NatH = float32(nat.Y)
+				overlay.Refresh()
+
+				slider.Max = float64(len(files) - 1)
+				slider.SetValue(0)
+				slider.Refresh()
+				frameLabel.SetText(fmt.Sprintf("Frame 1 / %d", len(files)))
+				updatePreview()
+			}
+		})
+	}
+
+	importBtn := widget.NewButton("Import Latest Captures", func() {
+		importProgress := widget.NewProgressBar()
+		importLabel := widget.NewLabel("Importing and preloading images... Please wait.")
+
+		progress := dialog.NewCustomWithoutButtons(
+			"Importing",
+			container.NewVBox(importLabel, importProgress),
+			w,
+		)
+		progress.Show()
+
+		go func() {
+			imported, err := internal.ImportLatestCaptures(internal.InputDir, "archive")
+			if err == nil && len(imported) > 0 {
+				loadFrames(imported, importProgress.SetValue)
+			}
+
+			fyne.Do(func() {
+				progress.Hide()
+
+				if err != nil {
+					dialog.ShowError(fmt.Errorf("Import failed: %v", err), w)
+					return
+				}
+
+				if len(imported) > 0 {
+					dialog.ShowInformation("Imported", fmt.Sprintf("Imported %d frames successfully.", len(imported)), w)
+				} else {
+					dialog.ShowInformation("Imported", "No new frames found to import.", w)
+				}
+			})
+		}()
+	})
+
 	controls := container.NewVBox(
-		container.NewBorder(nil, nil, nil, container.NewHBox(colorBox, helpBtn), toggleLockBtn),
+		container.NewBorder(nil, nil, nil, container.NewHBox(importBtn, layout.NewSpacer(), colorBox, helpBtn), toggleLockBtn),
 		container.NewBorder(nil, nil, nil, frameLabel, slider),
-		saveBtn,
+		processBox,
 		statusLabel,
 	)
 
@@ -440,7 +483,7 @@ func main() {
 
 	// arrow keys nudge
 	w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
-		if !overlay.HasSelection {
+		if !overlay.HasSelection || len(naturalSizes) == 0 {
 			return
 		}
 
@@ -487,13 +530,13 @@ func main() {
 		}
 
 		overlay.SetSelection(minX, minY, maxX, maxY)
-		updateStatus()
+		updateStatus(true)
 	})
 
-	w.ShowAndRun()
-
-	if internal.GlobalSafeZone.Active {
-		fmt.Println("\nSafe zone received. Starting batch process...")
-		internal.RunBatchProcessing()
+	initialFiles, _ := internal.GetPNGFiles(internal.InputDir)
+	if len(initialFiles) > 0 {
+		loadFrames(initialFiles, nil)
 	}
+
+	w.ShowAndRun()
 }

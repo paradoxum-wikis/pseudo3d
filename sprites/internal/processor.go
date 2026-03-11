@@ -8,44 +8,28 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/disintegration/imaging"
-	"github.com/schollz/progressbar/v3"
 	"github.com/t7ru/chromakey"
 )
 
-func RunBatchProcessing() {
+func RunBatchProcessing(progressCallback func(current, total int)) error {
 	OutputFile = strings.TrimSuffix(OutputFile, ".png") + ".png"
 	LoadSafeZoneConfig()
 	if !GlobalSafeZone.Active {
-		fmt.Println("No safe zone configured. Run without -process to open the UI first.")
-		os.Exit(1)
+		return fmt.Errorf("no safe zone configured")
 	}
 
 	files, err := GetPNGFiles(InputDir)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	fmt.Printf("Configuration:\n")
-	fmt.Printf(" - Input: %s | Output: %s\n", InputDir, OutputFile)
-	fmt.Printf(" - Target Size: %dx%d\n", TargetSize, TargetSize)
-	if !SkipBgRemoval {
-		fmt.Printf(" - BG Removal: ON (Color: #%s, Threshold: %.1f)\n", strings.ToUpper(strings.TrimPrefix(HexColor, "#")), Threshold)
-		if ErodeEdges {
-			fmt.Printf(" - Edge Erosion: ON\n")
-		}
-	} else {
-		fmt.Printf(" - BG Removal: OFF\n")
-	}
-
-	bar := progressbar.Default(int64(len(files)), "Processing frames")
-	sheet := image.NewRGBA(image.Rect(0, 0, TargetSize*len(files), TargetSize))
+	totalFiles := len(files)
+	sheet := image.NewRGBA(image.Rect(0, 0, TargetSize*totalFiles, TargetSize))
 
 	for i, path := range files {
 		img := LoadImage(path)
@@ -73,12 +57,14 @@ func RunBatchProcessing() {
 
 		draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
 
-		bar.Add(1)
+		if progressCallback != nil {
+			progressCallback(i+1, totalFiles)
+		}
 	}
 
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, sheet); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to encode PNG: %w", err)
 	}
 
 	pngData := buf.Bytes()
@@ -132,13 +118,12 @@ func RunBatchProcessing() {
 
 	out, err := os.Create(OutputFile)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer out.Close()
 	if _, err := out.Write(pngData); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to write output file: %w", err)
 	}
 
-	fmt.Printf("\nHeeho! Spritesheet saved as %s (%d frames)\n", OutputFile, len(files))
-	time.Sleep(3 * time.Second)
+	return nil
 }

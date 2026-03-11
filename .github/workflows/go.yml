@@ -34,7 +34,7 @@ jobs:
         working-directory: sprites
         run: |
           $env:CGO_ENABLED = "1"; $env:GOOS = "windows"; $env:GOARCH = "amd64"
-          go build -ldflags "-s -w" -o ../bin/pseudo3d-sprites.exe .
+          go build -ldflags "-s -w -H=windowsgui" -o ../bin/pseudo3d-sprites.exe .
       - uses: actions/upload-artifact@v7
         with:
           name: windows-binary
