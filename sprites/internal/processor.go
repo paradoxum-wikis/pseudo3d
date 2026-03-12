@@ -36,7 +36,7 @@ func getOpaqueBounds(img image.Image) image.Rectangle {
 
 	if pix != nil {
 		for y := b.Min.Y; y < b.Max.Y; y++ {
-			off := (y-b.Min.Y)*stride + b.Min.X*4
+			off := (y - b.Min.Y) * stride
 			row := pix[off : off+width4]
 			for x := 0; x < width4; x += 4 {
 				if row[x+3] > 0 {
@@ -101,6 +101,9 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 	}
 
 	totalFiles := len(files)
+	if totalFiles == 0 {
+		return fmt.Errorf("no files to process")
+	}
 
 	targetOut := OutputFile
 	if totalFiles == 1 {
@@ -111,10 +114,12 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 
 	if totalFiles == 1 {
 		img := LoadImage(files[0])
+
 		cropped := imaging.Crop(img, image.Rect(
 			GlobalSafeZone.MinX, GlobalSafeZone.MinY,
 			GlobalSafeZone.MaxX, GlobalSafeZone.MaxY,
 		))
+
 		var currentImg image.Image = cropped
 		if !SkipBgRemoval {
 			currentImg = chromakey.Remove(currentImg, ChromaKey, Threshold)
@@ -124,14 +129,19 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 				}
 			}
 		}
+
 		tight := getOpaqueBounds(currentImg)
+
 		if tight.Empty() {
 			tight = currentImg.Bounds()
 		}
+
 		finalCropped := imaging.Crop(currentImg, tight)
 		fb := finalCropped.Bounds()
+
 		w, h := fb.Dx(), fb.Dy()
 		sq := max(w, h)
+
 		sheet = image.NewRGBA(image.Rect(0, 0, sq, sq))
 		dx := (sq - w) / 2
 		dy := (sq - h) / 2
