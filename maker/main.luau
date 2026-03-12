@@ -19,6 +19,7 @@ local DEPTH_MAX       = 10       			-- nearest depth shift allowed
 local ZOOM_STEP       = .1        			-- units moved per R/F press
 local ZOOM_MIN        = 2        			-- closest the camera can get
 local ZOOM_MAX        = 50       			-- furthest the camera can get
+local ANIM_STEP       = 0.1     			-- animation time moved per N/M press
 local BACKDROP		  = true       			-- whether to use a backdrop behind the model
 local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
 local FLAT_LIGHTING   = false     			-- set false to keep your scene lighting as is
@@ -52,6 +53,14 @@ subLabel.BackgroundTransparency = 1
 subLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
 subLabel.TextSize = 16
 subLabel.Font = Enum.Font.Gotham
+
+local botLabel = Instance.new("TextLabel", bg)
+botLabel.Size = UDim2.fromOffset(700, 24)
+botLabel.Position = UDim2.new(0.5, -350, 1, -30)
+botLabel.BackgroundTransparency = 1
+botLabel.TextColor3 = Color3.new(1, 1, 0.5)
+botLabel.TextSize = 16
+botLabel.Font = Enum.Font.GothamBold
 
 local previewLabel = Instance.new("TextLabel", bg)
 previewLabel.Size = UDim2.fromOffset(700, 30)
@@ -116,14 +125,15 @@ end
 local targetAnimSeq = model:FindFirstChild(ANIM_NAME)
 local humOrCtrl = model:FindFirstChildOfClass("Humanoid") or model:FindFirstChildOfClass("AnimationController")
 
+local animationTrack = nil
 if humOrCtrl and targetAnimSeq and targetAnimSeq:IsA("KeyframeSequence") then
 	local animator = humOrCtrl:FindFirstChildOfClass("Animator") or Instance.new("Animator", humOrCtrl)
 	local anim = Instance.new("Animation")
 	anim.AnimationId = KeyframeSequenceProvider:RegisterKeyframeSequence(targetAnimSeq)
-	local track = animator:LoadAnimation(anim)
-	track:Play()
-	track:AdjustSpeed(0)
-	track.TimePosition = 0
+	animationTrack = animator:LoadAnimation(anim)
+	animationTrack:Play()
+	animationTrack:AdjustSpeed(0)
+	animationTrack.TimePosition = 0
 end
 
 task.wait(0.5)
@@ -221,14 +231,18 @@ local function updateUI()
 		previewLabel.Text = string.format("%s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d",
 			statusText, heightOffset, pivotOffset, depthOffset, distance, currentFrame, ROTATIONS)
 		previewSubLabel.Text = "P: stop preview | Space: pause/resume"
+		botLabel.Visible = false
 	else
 		local side = "Front"
 		if rootPart then
 			side = math.abs(startingAngleOffset - getFrontAngle()) < 0.01 and "Front" or "Back"
 		end
-		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d",
-			side, heightOffset, pivotOffset, depthOffset, distance, currentFrame, ROTATIONS)
-		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | O: pivot point | P: preview | K/L: rotate | Q: capture all | C: capture one"
+		local animPos = animationTrack and string.format(" | Anim: %.2fs", animationTrack.TimePosition) or ""
+		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f%s | Frame %d/%d",
+			side, heightOffset, pivotOffset, depthOffset, distance, animPos, currentFrame, ROTATIONS)
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | N/M: anim | O: pivot point | P: preview | K/L: rotate"
+		botLabel.Text = "Q: capture all frames   |   C: capture one frame"
+		botLabel.Visible = true
 	end
 end
 
@@ -250,6 +264,7 @@ local function stopPreview()
 	previewSubLabel.Visible = false
 	label.Visible = true
 	subLabel.Visible = true
+	botLabel.Visible = true
 	previewing = false
 	paused = false
 	if previewConnection then
@@ -263,6 +278,7 @@ end
 local function startPreview()
 	label.Visible = false
 	subLabel.Visible = false
+	botLabel.Visible = false
 	previewLabel.Visible = true
 	previewSubLabel.Visible = true
 	previewing = true
@@ -284,6 +300,7 @@ local function captureNext(oneShot)
 
 	label.Visible = false
 	subLabel.Visible = false
+	botLabel.Visible = false
 	previewLabel.Visible = false
 	previewSubLabel.Visible = false
 	pivotBillboard.Enabled = false
@@ -317,8 +334,10 @@ local function captureNext(oneShot)
 				else
 					label.Visible = true
 					subLabel.Visible = true
+					botLabel.Visible = true
 					label.Text = text
 					subLabel.Text = ""
+					botLabel.Text = ""
 				end
 				pivotBillboard.Enabled = showPivot
 				print(text)
@@ -343,6 +362,17 @@ local keyActions = {
 	[Enum.KeyCode.X] = function() depthOffset  = math.min(depthOffset  + PIVOT_STEP,  DEPTH_MAX)  end,
 	[Enum.KeyCode.R] = function() distance     = math.max(distance     - ZOOM_STEP,   ZOOM_MIN)   end,
 	[Enum.KeyCode.F] = function() distance     = math.min(distance     + ZOOM_STEP,   ZOOM_MAX)   end,
+	[Enum.KeyCode.N] = function()
+		if animationTrack then
+			animationTrack.TimePosition = math.max(0, animationTrack.TimePosition - ANIM_STEP)
+		end
+	end,
+	[Enum.KeyCode.M] = function()
+		if animationTrack then
+			local maxTime = animationTrack.Length > 0 and animationTrack.Length or 10
+			animationTrack.TimePosition = math.min(maxTime, animationTrack.TimePosition + ANIM_STEP)
+		end
+	end,
 	[Enum.KeyCode.O] = function()
 		showPivot = not showPivot
 		pivotBillboard.Enabled = showPivot
