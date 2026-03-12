@@ -314,10 +314,8 @@ local function captureNext(oneShot)
 				else
 					label.Visible = true
 					subLabel.Visible = true
-					botLabel.Visible = true
 					label.Text = text
 					subLabel.Text = ""
-					botLabel.Text = ""
 				end
 				pivotBillboard.Enabled = showPivot
 				print(text)
