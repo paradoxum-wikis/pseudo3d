@@ -22,35 +22,22 @@ func getOpaqueBounds(img image.Image) image.Rectangle {
 	minX, minY := math.MaxInt32, math.MaxInt32
 	maxX, maxY := math.MinInt32, math.MinInt32
 	found := false
-	if rgba, ok := img.(*image.RGBA); ok {
-		width4 := b.Dx() * 4
+
+	width4 := b.Dx() * 4
+
+	var pix []uint8
+	var stride int
+	switch src := img.(type) {
+	case *image.RGBA:
+		pix, stride = src.Pix, src.Stride
+	case *image.NRGBA:
+		pix, stride = src.Pix, src.Stride
+	}
+
+	if pix != nil {
 		for y := b.Min.Y; y < b.Max.Y; y++ {
-			off := rgba.PixOffset(b.Min.X, y)
-			row := rgba.Pix[off : off+width4]
-			for x := 0; x < width4; x += 4 {
-				if row[x+3] > 0 {
-					found = true
-					realX := b.Min.X + x/4
-					if realX < minX {
-						minX = realX
-					}
-					if realX > maxX {
-						maxX = realX
-					}
-					if y < minY {
-						minY = y
-					}
-					if y > maxY {
-						maxY = y
-					}
-				}
-			}
-		}
-	} else if nrgba, ok := img.(*image.NRGBA); ok {
-		width4 := b.Dx() * 4
-		for y := b.Min.Y; y < b.Max.Y; y++ {
-			off := nrgba.PixOffset(b.Min.X, y)
-			row := nrgba.Pix[off : off+width4]
+			off := (y-b.Min.Y)*stride + b.Min.X*4
+			row := pix[off : off+width4]
 			for x := 0; x < width4; x += 4 {
 				if row[x+3] > 0 {
 					found = true
