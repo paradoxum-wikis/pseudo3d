@@ -194,25 +194,15 @@ func (sa *SpriteApp) buildProcessBox() {
 		}
 		SaveSafeZoneConfig()
 
-		sa.SaveBtn.Hide()
-		sa.SaveOneBtn.Hide()
-		sa.ProgressBar.SetValue(0)
-		sa.ProgressBar.Show()
+		sa.setProcessingState(true)
 
 		go func() {
 			err := RunBatchProcessing(nil, func(current, total int) {
-				fyne.Do(func() {
-					sa.ProgressBar.SetValue(float64(current) / float64(total))
-				})
+				fyne.Do(func() { sa.ProgressBar.SetValue(float64(current) / float64(total)) })
 			})
 
 			fyne.Do(func() {
-				sa.SaveBtn.Show()
-				if len(sa.Files) > 1 {
-					sa.SaveOneBtn.Show()
-				}
-				sa.ProgressBar.Hide()
-
+				sa.setProcessingState(false)
 				if err != nil {
 					dialog.ShowError(err, sa.Window)
 				} else {
@@ -239,26 +229,16 @@ func (sa *SpriteApp) buildProcessBox() {
 		}
 		SaveSafeZoneConfig()
 
-		sa.SaveBtn.Hide()
-		sa.SaveOneBtn.Hide()
-		sa.ProgressBar.SetValue(0)
-		sa.ProgressBar.Show()
+		sa.setProcessingState(true)
 
 		go func() {
 			singleFile := []string{sa.Files[sa.CurrentImageIndex]}
 			err := RunBatchProcessing(singleFile, func(current, total int) {
-				fyne.Do(func() {
-					sa.ProgressBar.SetValue(float64(current) / float64(total))
-				})
+				fyne.Do(func() { sa.ProgressBar.SetValue(float64(current) / float64(total)) })
 			})
 
 			fyne.Do(func() {
-				sa.SaveBtn.Show()
-				if len(sa.Files) > 1 {
-					sa.SaveOneBtn.Show()
-				}
-				sa.ProgressBar.Hide()
-
+				sa.setProcessingState(false)
 				if err != nil {
 					dialog.ShowError(err, sa.Window)
 				} else {
@@ -267,6 +247,24 @@ func (sa *SpriteApp) buildProcessBox() {
 			})
 		}()
 	})
+}
+
+func (sa *SpriteApp) setProcessingState(processing bool) {
+	if processing {
+		sa.SaveBtn.Hide()
+		sa.SaveOneBtn.Hide()
+		sa.ProgressBar.SetValue(0)
+		sa.ProgressBar.Show()
+	} else {
+		sa.SaveBtn.Show()
+		if len(sa.Files) > 1 {
+			sa.SaveOneBtn.Show()
+		} else {
+			sa.SaveOneBtn.Hide() // hide oneshot if there's only 1 frame
+		}
+		sa.ProgressBar.Hide()
+	}
+	sa.ButtonBox.Refresh()
 }
 
 func (sa *SpriteApp) buildPreviewPanel() {
@@ -497,14 +495,12 @@ func (sa *SpriteApp) loadFrames(newFiles []string, progressCallback func(float64
 		sa.NaturalSizes = shinNaturalSizes
 		sa.PreviewImages = shinPreviewImages
 
-		if len(sa.Files) <= 1 {
-			sa.SaveOneBtn.Hide()
-		} else {
+		if len(sa.Files) > 1 {
 			sa.SaveOneBtn.Show()
+		} else {
+			sa.SaveOneBtn.Hide()
 		}
-		if sa.ButtonBox != nil {
-			sa.ButtonBox.Refresh()
-		}
+		sa.ButtonBox.Refresh()
 
 		if len(sa.Files) > 0 {
 			sa.CurrentImageIndex = 0
