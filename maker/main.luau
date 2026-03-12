@@ -38,47 +38,25 @@ local bg = Instance.new("ScreenGui", player.PlayerGui)
 bg.IgnoreGuiInset = true
 bg.DisplayOrder = 999
 
-local label = Instance.new("TextLabel", bg)
-label.Size = UDim2.fromOffset(700, 30)
-label.Position = UDim2.new(0.5, -350, 0, 16)
-label.BackgroundTransparency = 1
-label.TextColor3 = Color3.new(1, 1, 1)
-label.TextSize = 20
-label.Font = Enum.Font.GothamBold
+local function createLabel(height, yOffset, yPos, color, size, bold, visible)
+	local lbl = Instance.new("TextLabel", bg)
+	lbl.Size = UDim2.fromOffset(700, height)
+	lbl.Position = UDim2.new(0.5, -350, yPos, yOffset)
+	lbl.BackgroundTransparency = 1
+	lbl.TextColor3 = color
+	lbl.TextSize = size
+	local weight = bold and Enum.FontWeight.Bold or Enum.FontWeight.Regular
+	lbl.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", weight)
+	lbl.Visible = visible ~= false
+	return lbl
+end
 
-local subLabel = Instance.new("TextLabel", bg)
-subLabel.Size = UDim2.fromOffset(700, 24)
-subLabel.Position = UDim2.new(0.5, -350, 0, 44)
-subLabel.BackgroundTransparency = 1
-subLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-subLabel.TextSize = 16
-subLabel.Font = Enum.Font.Gotham
+local label = createLabel(30, 16, 0, Color3.new(1, 1, 1), 20, true)
+local subLabel = createLabel(24, 44, 0, Color3.new(0.8, 0.8, 0.8), 16, false)
+local botLabel = createLabel(24, -30, 1, Color3.new(1, 1, 0.5), 16, true)
 
-local botLabel = Instance.new("TextLabel", bg)
-botLabel.Size = UDim2.fromOffset(700, 24)
-botLabel.Position = UDim2.new(0.5, -350, 1, -30)
-botLabel.BackgroundTransparency = 1
-botLabel.TextColor3 = Color3.new(1, 1, 0.5)
-botLabel.TextSize = 16
-botLabel.Font = Enum.Font.GothamBold
-
-local previewLabel = Instance.new("TextLabel", bg)
-previewLabel.Size = UDim2.fromOffset(700, 30)
-previewLabel.Position = UDim2.new(0.5, -350, 0, 16)
-previewLabel.BackgroundTransparency = 1
-previewLabel.TextColor3 = Color3.new(0, 1, 0.5)
-previewLabel.TextSize = 22
-previewLabel.Font = Enum.Font.GothamBold
-previewLabel.Visible = false
-
-local previewSubLabel = Instance.new("TextLabel", bg)
-previewSubLabel.Size = UDim2.fromOffset(700, 24)
-previewSubLabel.Position = UDim2.new(0.5, -350, 0, 44)
-previewSubLabel.BackgroundTransparency = 1
-previewSubLabel.TextColor3 = Color3.new(0.7, 1, 0.8)
-previewSubLabel.TextSize = 16
-previewSubLabel.Font = Enum.Font.Gotham
-previewSubLabel.Visible = false
+local previewLabel = createLabel(30, 16, 0, Color3.new(0, 1, 0.5), 22, true, false)
+local previewSubLabel = createLabel(24, 44, 0, Color3.new(0.7, 1, 0.8), 16, false, false)
 
 local model = workspace:WaitForChild(TARGET_NAME, 10)
 if not model then return warn("No '" .. TARGET_NAME .. "' found in workspace!") end
