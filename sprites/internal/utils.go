@@ -123,8 +123,8 @@ func getRobloxCaptureDir() (string, error) {
 	if home, err := os.UserHomeDir(); err == nil {
 		candidates := []string{
 			filepath.Join(home, "Library", "Roblox", "tmp-capture-storage"),
-			filepath.Join(home, ".var", "app", "org.vinegarhq.Vinegar", "data", "vinegar", "studio", "prefix", "drive_c", "users", os.Getenv("USER"), "AppData", "Local", "Roblox", "tmp-capture-storage"),
-			filepath.Join(home, ".local", "share", "vinegar", "studio", "prefix", "drive_c", "users", os.Getenv("USER"), "AppData", "Local", "Roblox", "tmp-capture-storage"),
+			filepath.Join(home, ".var", "app", "org.vinegarhq.Vinegar", "data", "vinegar", "appdata", "Roblox", "tmp-capture-storage"),
+			filepath.Join(home, ".local", "share", "vinegar", "appdata", "Roblox", "tmp-capture-storage"),
 		}
 		for _, dir := range candidates {
 			if IsDirectory(dir) {
