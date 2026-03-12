@@ -94,3 +94,37 @@ func LoadConfiguration() {
 		}
 	}
 }
+
+func UpdateConfig(updates map[string]string) error {
+	filename := "configuration.cfg"
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	for key, value := range updates {
+		if flag.Lookup(key) != nil {
+			flag.Set(key, value)
+		}
+	}
+
+	var newLines []string
+	for line := range strings.SplitSeq(string(content), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if key, _, ok := strings.Cut(trimmed, "="); ok {
+			key = strings.TrimSpace(key)
+			if val, exists := updates[key]; exists {
+				newLines = append(newLines, fmt.Sprintf("%s=%s", key, val))
+				delete(updates, key)
+				continue
+			}
+		}
+		newLines = append(newLines, line)
+	}
+
+	for key, value := range updates {
+		newLines = append(newLines, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	return os.WriteFile(filename, []byte(strings.Join(newLines, "\n")), 0644)
+}

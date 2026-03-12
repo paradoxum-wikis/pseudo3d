@@ -9,6 +9,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -481,8 +482,78 @@ func main() {
 		}()
 	})
 
+	settingsBtn := widget.NewButton("Settings", func() {
+		sizeEntry := widget.NewEntry()
+		sizeEntry.SetText(fmt.Sprintf("%d", internal.TargetSize))
+
+		skipUiCheck := widget.NewCheck("Skip UI on Startup", nil)
+		skipUiCheck.SetChecked(internal.ProcessMode)
+
+		skipBgCheck := widget.NewCheck("Skip Background Removal", nil)
+		skipBgCheck.SetChecked(internal.SkipBgRemoval)
+
+		thresholdEntry := widget.NewEntry()
+		thresholdEntry.SetText(fmt.Sprintf("%.1f", internal.Threshold))
+
+		inEntry := widget.NewEntry()
+		inEntry.SetText(internal.InputDir)
+
+		outEntry := widget.NewEntry()
+		outEntry.SetText(internal.OutputFile)
+
+		erodeCheck := widget.NewCheck("Erode Edges", nil)
+		erodeCheck.SetChecked(internal.ErodeEdges)
+
+		colorEntry := widget.NewEntry()
+		colorEntry.SetText(internal.HexColor)
+
+		skipPrescaleCheck := widget.NewCheck("Skip Prescale (Full Res Preview)", nil)
+		skipPrescaleCheck.SetChecked(internal.SkipPrescale)
+
+		items := []*widget.FormItem{
+			widget.NewFormItem("", skipUiCheck),
+			widget.NewFormItem("Output Size (px)", sizeEntry),
+			widget.NewFormItem("", skipBgCheck),
+			widget.NewFormItem("BG Threshold", thresholdEntry),
+			widget.NewFormItem("Input Directory", inEntry),
+			widget.NewFormItem("Output Filename", outEntry),
+			widget.NewFormItem("", erodeCheck),
+			widget.NewFormItem("Chroma Key Color", colorEntry),
+			widget.NewFormItem("", skipPrescaleCheck),
+		}
+
+		dialog.ShowForm("Settings", "Save", "Cancel", items, func(b bool) {
+			if !b {
+				return
+			}
+			updates := map[string]string{
+				"skip-ui":       strconv.FormatBool(skipUiCheck.Checked),
+				"size":          sizeEntry.Text,
+				"skip-bg":       strconv.FormatBool(skipBgCheck.Checked),
+				"threshold-bg":  thresholdEntry.Text,
+				"in":            inEntry.Text,
+				"out":           outEntry.Text,
+				"erode":         strconv.FormatBool(erodeCheck.Checked),
+				"color-bg":      colorEntry.Text,
+				"skip-prescale": strconv.FormatBool(skipPrescaleCheck.Checked),
+			}
+			err := internal.UpdateConfig(updates)
+			if err != nil {
+				dialog.ShowError(err, w)
+			} else {
+				var parseErr error
+				internal.ChromaKey, parseErr = internal.ParseHexColor(internal.HexColor)
+				if parseErr == nil && colorPreview != nil {
+					colorPreview.FillColor = internal.ChromaKey
+					colorPreview.Refresh()
+				}
+				dialog.ShowInformation("Settings", "Settings saved!", w)
+			}
+		}, w)
+	})
+
 	controls := container.NewVBox(
-		container.NewBorder(nil, nil, nil, container.NewHBox(importBtn, layout.NewSpacer(), colorBox, helpBtn), toggleLockBtn),
+		container.NewBorder(nil, nil, nil, container.NewHBox(importBtn, settingsBtn, layout.NewSpacer(), colorBox, helpBtn), toggleLockBtn),
 		container.NewBorder(nil, nil, nil, frameLabel, slider),
 		processBox,
 		statusLabel,
