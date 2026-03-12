@@ -2,8 +2,8 @@ sprites/process/*
 !sprites/process/.gitkeep
 sprites/spritesheet.png
 sprites/oneshot.png
-sprites/safezone.cfg
 sprites/archive/*
 !sprites/archive/.gitkeep
 sprites/main_test.go
 sprites/configuration.cfg
+sprites/pseudo3d-sprites*
