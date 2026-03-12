@@ -5,8 +5,8 @@ In order to use this toolset, look at the ["Releases"](https://github.com/parado
 The archives available for downloads are:
  - **pseudo3d-windows-amd64.zip**: Windows 64-bit.
  - **pseudo3d-linux-amd64.tar.xz**: Linux 64-bit.
- - **pseudo3d-macos-amd64.zip**: MacOS 64-bit.
- - **pseudo3d-macos-arm64.zip**: MacOS Apple Silicon.
+ - **pseudo3d-macos-amd64.zip**: macOS 64-bit.
+ - **pseudo3d-macos-arm64.zip**: macOS Apple Silicon.
 
 ## Setting Up the Toolset
 
@@ -35,11 +35,11 @@ There are also more configurations you can change inside your "pseudo3d-maker" `
 Press Q and you can start the capturing process. Note that your cursor **will be hidden**, so you will have to estimate where your cursor is when you want to click "Save."
 
 **All of your images will be saved in a folder called "tmp-capture-storage."** You can find this folder by:
-- On Windows: Windows + R > `%localappdata%\Roblox\tmp-capture-storage` > Enter.
-- On MacOS: Finder > Command + Shift + G > `~/Library/Application Support/Roblox/tmp-capture-storage` > Enter.
+- On Windows: Windows + R > `%localappdata%\Roblox\tmp-capture-storage` > Enter
+- On macOS: Finder > Command + Shift + G > `~/Library/Roblox/tmp-capture-storage` > Enter
 - On Linux (Vinegar):
-	- Flatpak: `cd ~/.var/app/org.vinegarhq.Vinegar/data/vinegar/studio/prefix/drive_c/users/$USER/AppData/Local/Roblox/tmp-capture-storage`
-	- Native: `cd ~/.local/share/vinegar/studio/prefix/drive_c/users/$USER/AppData/Local/Roblox/tmp-capture-storage`
+	- Flatpak: `cd ~/.var/app/org.vinegarhq.Vinegar/data/vinegar/appdata/Roblox/tmp-capture-storage`
+	- Native: `cd ~/.local/share/vinegar/appdata/Roblox/tmp-capture-storage`
 
 The toolset features an auto-import function that can automatically copy the latest captures (24 images) from your capture directory into the "process" folder and will **safely archive** any existing files into "archive." Alternatively, you can move them manually to the "process" folder inside your toolset directory.
 
@@ -48,9 +48,9 @@ The toolset features an auto-import function that can automatically copy the lat
 After you've captured the frames and moved them into the "process" folder, you can start processing them. Simply run the executable file inside the folder, and follow the instructions.
 
 > [!NOTE]
-> The program run may be flagged by Windows SmartScreen for not having a verified publisher; this is a false positive, as I do not have the resources to get a code signing certificate.
+> The program run may be flagged by Windows SmartScreen or macOS Gatekeeper for not having a verified publisher; this is a false positive, as I do not have the resources to get a code signing certificate.
 >
-> If it were actually malware, Windows Defender would have blocked the file instead of showing a warning. Besides, the source code is open, and you can verify that yourself.
+> If it were actually malware, the operating system would have blocked the file instead of showing a warning. Besides, the source code is open, and you can verify that yourself.
 
 The UI will show you one of your captured frames. You can slide through them all with the slider below the image. Now, simply draw a square around the area you want to keep, then click "Save." In case a square won't fit the area you want to capture, you can click on the button that says "Square Ratio" to change it to "Freeform."
 
