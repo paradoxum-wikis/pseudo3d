@@ -33,7 +33,7 @@ func main() {
 	}
 
 	if internal.ProcessMode {
-		if err := internal.RunBatchProcessing(nil); err != nil {
+		if err := internal.RunBatchProcessing(nil, nil); err != nil {
 			fmt.Printf("Processing failed: %v\n", err)
 			os.Exit(1)
 		}

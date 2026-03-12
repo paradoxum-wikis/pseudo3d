@@ -34,6 +34,7 @@ type SpriteApp struct {
 	FrameLabel         *widget.Label
 	Slider             *widget.Slider
 	SaveBtn            *widget.Button
+	SaveOneBtn         *widget.Button
 	ProgressBar        *widget.ProgressBar
 	ColorPreview       *canvas.Rectangle
 	PickColorToggleBtn *widget.Button
@@ -129,7 +130,7 @@ func (sa *SpriteApp) buildUI() {
 	importBtn := sa.buildImportBtn()
 	settingsBtn := sa.buildSettingsBtn()
 
-	processBox := container.NewStack(sa.SaveBtn, sa.ProgressBar)
+	processBox := container.NewStack(container.NewBorder(nil, nil, nil, sa.SaveOneBtn, sa.SaveBtn), sa.ProgressBar)
 
 	controls := container.NewVBox(
 		container.NewBorder(nil, nil, nil, container.NewHBox(importBtn, settingsBtn, layout.NewSpacer(), colorBox, helpBtn), toggleLockBtn),
@@ -192,11 +193,12 @@ func (sa *SpriteApp) buildProcessBox() {
 		SaveSafeZoneConfig()
 
 		sa.SaveBtn.Hide()
+		sa.SaveOneBtn.Hide()
 		sa.ProgressBar.SetValue(0)
 		sa.ProgressBar.Show()
 
 		go func() {
-			err := RunBatchProcessing(func(current, total int) {
+			err := RunBatchProcessing(nil, func(current, total int) {
 				fyne.Do(func() {
 					sa.ProgressBar.SetValue(float64(current) / float64(total))
 				})
@@ -204,6 +206,7 @@ func (sa *SpriteApp) buildProcessBox() {
 
 			fyne.Do(func() {
 				sa.SaveBtn.Show()
+				sa.SaveOneBtn.Show()
 				sa.ProgressBar.Hide()
 
 				if err != nil {
@@ -214,6 +217,46 @@ func (sa *SpriteApp) buildProcessBox() {
 						fname = OneShotFile
 					}
 					dialog.ShowInformation("Success", fmt.Sprintf("Heeho! Spritesheet saved as %s (%d frames)!", fname, len(sa.Files)), sa.Window)
+				}
+			})
+		}()
+	})
+
+	sa.SaveOneBtn = widget.NewButton("One-shot current frame!", func() {
+		if !sa.Overlay.HasSelection || sa.Overlay.MinX == sa.Overlay.MaxX || len(sa.Files) == 0 {
+			return
+		}
+		GlobalSafeZone = SafeZone{
+			MinX:   int(math.Round(float64(sa.Overlay.MinX))),
+			MinY:   int(math.Round(float64(sa.Overlay.MinY))),
+			MaxX:   int(math.Round(float64(sa.Overlay.MaxX))),
+			MaxY:   int(math.Round(float64(sa.Overlay.MaxY))),
+			Active: true,
+		}
+		SaveSafeZoneConfig()
+
+		sa.SaveBtn.Hide()
+		sa.SaveOneBtn.Hide()
+		sa.ProgressBar.SetValue(0)
+		sa.ProgressBar.Show()
+
+		go func() {
+			singleFile := []string{sa.Files[sa.CurrentImageIndex]}
+			err := RunBatchProcessing(singleFile, func(current, total int) {
+				fyne.Do(func() {
+					sa.ProgressBar.SetValue(float64(current) / float64(total))
+				})
+			})
+
+			fyne.Do(func() {
+				sa.SaveBtn.Show()
+				sa.SaveOneBtn.Show()
+				sa.ProgressBar.Hide()
+
+				if err != nil {
+					dialog.ShowError(err, sa.Window)
+				} else {
+					dialog.ShowInformation("Success", fmt.Sprintf("Heeho! One-shot saved as %s!", OneShotFile), sa.Window)
 				}
 			})
 		}()

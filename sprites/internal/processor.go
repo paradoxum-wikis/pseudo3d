@@ -85,16 +85,19 @@ func getOpaqueBounds(img image.Image) image.Rectangle {
 	return image.Rect(minX, minY, maxX+1, maxY+1)
 }
 
-func RunBatchProcessing(progressCallback func(current, total int)) error {
+func RunBatchProcessing(files []string, progressCallback func(current, total int)) error {
 	OutputFile = strings.TrimSuffix(OutputFile, ".png") + ".png"
 
 	if !GlobalSafeZone.Active {
 		return fmt.Errorf("no safe zone configured")
 	}
 
-	files, err := GetPNGFiles(InputDir)
-	if err != nil {
-		return err
+	if len(files) == 0 {
+		var err error
+		files, err = GetPNGFiles(InputDir)
+		if err != nil {
+			return err
+		}
 	}
 
 	totalFiles := len(files)
