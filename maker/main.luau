@@ -28,6 +28,7 @@ local CLEAR_WORKSPACE = true				-- remove everything in workspace except Target 
 local PREVIEW_FPS     = 10					-- frames per second during preview rotation
 local TARGET_NAME     = "Target"			-- name of the model to capture
 local ANIM_NAME       = "Animation"			-- name of the animation to play
+local TARGET_EFFECTS  = false				-- show anything that emits from the model
 
 local player = Players.LocalPlayer
 for _, gui in ipairs(player.PlayerGui:GetChildren()) do
@@ -93,10 +94,12 @@ for _, part in ipairs(model:GetDescendants()) do
 	end
 end
 
-for _, desc in ipairs(model:GetDescendants()) do
-	if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam")
-		or desc:IsA("Smoke") or desc:IsA("Fire") or desc:IsA("Sparkles") then
-		desc.Enabled = false
+if not TARGET_EFFECTS then
+	for _, desc in ipairs(model:GetDescendants()) do
+		if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam")
+			or desc:IsA("Smoke") or desc:IsA("Fire") or desc:IsA("Sparkles") then
+			desc.Enabled = false
+		end
 	end
 end
 
