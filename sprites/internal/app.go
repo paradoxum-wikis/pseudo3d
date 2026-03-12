@@ -35,6 +35,7 @@ type SpriteApp struct {
 	Slider             *widget.Slider
 	SaveBtn            *widget.Button
 	SaveOneBtn         *widget.Button
+	ButtonBox          *fyne.Container
 	ProgressBar        *widget.ProgressBar
 	ColorPreview       *canvas.Rectangle
 	PickColorToggleBtn *widget.Button
@@ -130,7 +131,8 @@ func (sa *SpriteApp) buildUI() {
 	importBtn := sa.buildImportBtn()
 	settingsBtn := sa.buildSettingsBtn()
 
-	processBox := container.NewStack(container.NewBorder(nil, nil, nil, sa.SaveOneBtn, sa.SaveBtn), sa.ProgressBar)
+	sa.ButtonBox = container.NewBorder(nil, nil, nil, sa.SaveOneBtn, sa.SaveBtn)
+	processBox := container.NewStack(sa.ButtonBox, sa.ProgressBar)
 
 	controls := container.NewVBox(
 		container.NewBorder(nil, nil, nil, container.NewHBox(importBtn, settingsBtn, layout.NewSpacer(), colorBox, helpBtn), toggleLockBtn),
@@ -206,7 +208,9 @@ func (sa *SpriteApp) buildProcessBox() {
 
 			fyne.Do(func() {
 				sa.SaveBtn.Show()
-				sa.SaveOneBtn.Show()
+				if len(sa.Files) > 1 {
+					sa.SaveOneBtn.Show()
+				}
 				sa.ProgressBar.Hide()
 
 				if err != nil {
@@ -250,7 +254,9 @@ func (sa *SpriteApp) buildProcessBox() {
 
 			fyne.Do(func() {
 				sa.SaveBtn.Show()
-				sa.SaveOneBtn.Show()
+				if len(sa.Files) > 1 {
+					sa.SaveOneBtn.Show()
+				}
 				sa.ProgressBar.Hide()
 
 				if err != nil {
@@ -490,6 +496,15 @@ func (sa *SpriteApp) loadFrames(newFiles []string, progressCallback func(float64
 		sa.Files = newFiles
 		sa.NaturalSizes = shinNaturalSizes
 		sa.PreviewImages = shinPreviewImages
+
+		if len(sa.Files) <= 1 {
+			sa.SaveOneBtn.Hide()
+		} else {
+			sa.SaveOneBtn.Show()
+		}
+		if sa.ButtonBox != nil {
+			sa.ButtonBox.Refresh()
+		}
 
 		if len(sa.Files) > 0 {
 			sa.CurrentImageIndex = 0
