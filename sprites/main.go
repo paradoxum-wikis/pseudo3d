@@ -13,7 +13,7 @@ func init() {
 	flag.BoolVar(&internal.ProcessMode, "skip-ui", false, "Skip UI and directly run batch processing")
 	flag.IntVar(&internal.TargetSize, "size", 512, "Output size of the square frames (for example, 300 for 300x300)")
 	flag.BoolVar(&internal.SkipBgRemoval, "skip-bg", false, "Skip chroma key background removal completely")
-	flag.Float64Var(&internal.Threshold, "threshold-bg", 70.0, "Tolerance threshold for background removal (higher = more aggressive)")
+	flag.Float64Var(&internal.Threshold, "threshold-bg", 7000.0, "Tolerance threshold for background removal (higher = more aggressive)")
 	flag.StringVar(&internal.InputDir, "in", "./process", "Input directory containing PNG frames")
 	flag.StringVar(&internal.OutputFile, "out", "spritesheet.png", "Output spritesheet filename")
 	flag.StringVar(&internal.OneShotFile, "out-one", "oneshot.png", "Output filename for single frame exports")

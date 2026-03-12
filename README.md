@@ -84,7 +84,7 @@ Here is a full list of available flags:
 | `-skip-ui` | `false` | Skip the UI and run batch processing directly using the saved safe zone. |
 | `-size` | `512` | Output size of each square frame in pixels; e.g., `300` for 300×300. |
 | `-skip-bg` | `false` | Skip chroma key background removal entirely. |
-| `-threshold-bg` | `70.0` | Tolerance for background removal; higher values are more aggressive. |
+| `-threshold-bg` | `7000.0` | Tolerance for background removal; higher values are more aggressive. |
 | `-in` | `./process` | Input directory containing your PNG frames. |
 | `-out` | `spritesheet.png` | Output filename for the final spritesheet. |
 | `-out-one` | `oneshot.png` | Output filename for single frame exports. |
