@@ -28,7 +28,7 @@ func GetPNGFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
-func ImportLatestCaptures(processDir, archiveDir string) ([]string, error) {
+func ImportLatestCaptures(processDir, archiveDir string, limit int) ([]string, error) {
 	srcDir, err := getRobloxCaptureDir()
 	if err != nil {
 		return nil, err
@@ -66,9 +66,11 @@ func ImportLatestCaptures(processDir, archiveDir string) ([]string, error) {
 	sort.Slice(captures, func(i, j int) bool {
 		return captures[i].modTime.After(captures[j].modTime)
 	})
-	if len(captures) > 24 {
-		captures = captures[:24]
+
+	if limit > 0 && len(captures) > limit {
+		captures = captures[:limit]
 	}
+
 	sort.Slice(captures, func(i, j int) bool {
 		return captures[i].modTime.Before(captures[j].modTime)
 	})

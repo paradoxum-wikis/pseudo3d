@@ -445,7 +445,7 @@ func main() {
 		})
 	}
 
-	importBtn := widget.NewButton("Import Latest Captures", func() {
+	doImport := func(limit int) {
 		importProgress := widget.NewProgressBar()
 		importLabel := widget.NewLabel("Importing and preloading images... Please wait.")
 
@@ -457,7 +457,7 @@ func main() {
 		progress.Show()
 
 		go func() {
-			imported, err := internal.ImportLatestCaptures(internal.InputDir, "archive")
+			imported, err := internal.ImportLatestCaptures(internal.InputDir, "archive", limit)
 			if err == nil && len(imported) > 0 {
 				internal.GlobalSafeZone.Active = false
 				internal.SaveSafeZoneConfig()
@@ -480,6 +480,42 @@ func main() {
 				}
 			})
 		}()
+	}
+
+	importBtn := widget.NewButton("Import Latest Captures", func() {
+		opts := []string{"Single Frame (1)", "Wiki Standard (24)", "Custom Limit..."}
+
+		var limitSelect *widget.RadioGroup
+		limitSelect = widget.NewRadioGroup(opts, func(string) {})
+		limitSelect.SetSelected(opts[1])
+		limitSelect.Horizontal = false
+
+		dialog.ShowCustomConfirm("Import Images", "Start", "Cancel", limitSelect, func(b bool) {
+			if !b {
+				return
+			}
+			switch limitSelect.Selected {
+			case opts[0]:
+				doImport(1)
+			case opts[1]:
+				doImport(24)
+			case opts[2]:
+				entry := widget.NewEntry()
+				entry.SetText("24")
+				dialog.ShowForm("Custom Import Limit", "Import", "Cancel", []*widget.FormItem{
+					widget.NewFormItem("Frame Count:", entry),
+				}, func(ok bool) {
+					if ok {
+						val, err := strconv.Atoi(entry.Text)
+						if err == nil && val > 0 {
+							doImport(val)
+						} else {
+							dialog.ShowError(fmt.Errorf("invalid number: %s", entry.Text), w)
+						}
+					}
+				}, w)
+			}
+		}, w)
 	})
 
 	settingsBtn := widget.NewButton("Settings", func() {
