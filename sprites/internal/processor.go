@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,87 @@ import (
 	"github.com/disintegration/imaging"
 	"github.com/t7ru/chromakey"
 )
+
+func getOpaqueBounds(img image.Image) image.Rectangle {
+	b := img.Bounds()
+	minX, minY := math.MaxInt32, math.MaxInt32
+	maxX, maxY := math.MinInt32, math.MinInt32
+	found := false
+	if rgba, ok := img.(*image.RGBA); ok {
+		width4 := b.Dx() * 4
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			off := rgba.PixOffset(b.Min.X, y)
+			row := rgba.Pix[off : off+width4]
+			for x := 0; x < width4; x += 4 {
+				if row[x+3] > 0 {
+					found = true
+					realX := b.Min.X + x/4
+					if realX < minX {
+						minX = realX
+					}
+					if realX > maxX {
+						maxX = realX
+					}
+					if y < minY {
+						minY = y
+					}
+					if y > maxY {
+						maxY = y
+					}
+				}
+			}
+		}
+	} else if nrgba, ok := img.(*image.NRGBA); ok {
+		width4 := b.Dx() * 4
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			off := nrgba.PixOffset(b.Min.X, y)
+			row := nrgba.Pix[off : off+width4]
+			for x := 0; x < width4; x += 4 {
+				if row[x+3] > 0 {
+					found = true
+					realX := b.Min.X + x/4
+					if realX < minX {
+						minX = realX
+					}
+					if realX > maxX {
+						maxX = realX
+					}
+					if y < minY {
+						minY = y
+					}
+					if y > maxY {
+						maxY = y
+					}
+				}
+			}
+		}
+	} else {
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			for x := b.Min.X; x < b.Max.X; x++ {
+				_, _, _, a := img.At(x, y).RGBA()
+				if a > 0 {
+					found = true
+					if x < minX {
+						minX = x
+					}
+					if x > maxX {
+						maxX = x
+					}
+					if y < minY {
+						minY = y
+					}
+					if y > maxY {
+						maxY = y
+					}
+				}
+			}
+		}
+	}
+	if !found {
+		return image.Rectangle{}
+	}
+	return image.Rect(minX, minY, maxX+1, maxY+1)
+}
 
 func RunBatchProcessing(progressCallback func(current, total int)) error {
 	OutputFile = strings.TrimSuffix(OutputFile, ".png") + ".png"
@@ -29,17 +111,16 @@ func RunBatchProcessing(progressCallback func(current, total int)) error {
 	}
 
 	totalFiles := len(files)
-	sheet := image.NewRGBA(image.Rect(0, 0, TargetSize*totalFiles, TargetSize))
 
-	for i, path := range files {
-		img := LoadImage(path)
+	var sheet *image.RGBA
 
+	if totalFiles == 1 {
+		img := LoadImage(files[0])
 		cropped := imaging.Crop(img, image.Rect(
 			GlobalSafeZone.MinX, GlobalSafeZone.MinY,
 			GlobalSafeZone.MaxX, GlobalSafeZone.MaxY,
 		))
 		var currentImg image.Image = cropped
-
 		if !SkipBgRemoval {
 			currentImg = chromakey.Remove(currentImg, ChromaKey, Threshold)
 			if ErodeEdges {
@@ -48,17 +129,48 @@ func RunBatchProcessing(progressCallback func(current, total int)) error {
 				}
 			}
 		}
-
-		resized := imaging.Fit(currentImg, TargetSize, TargetSize, imaging.Lanczos)
-		b := resized.Bounds()
-		dx := (TargetSize - b.Dx()) / 2
-		dy := (TargetSize - b.Dy()) / 2
-		dp := image.Pt(i*TargetSize+dx, dy)
-
-		draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
-
+		tight := getOpaqueBounds(currentImg)
+		if tight.Empty() {
+			tight = currentImg.Bounds()
+		}
+		finalCropped := imaging.Crop(currentImg, tight)
+		fb := finalCropped.Bounds()
+		w, h := fb.Dx(), fb.Dy()
+		sq := max(w, h)
+		sheet = image.NewRGBA(image.Rect(0, 0, sq, sq))
+		dx := (sq - w) / 2
+		dy := (sq - h) / 2
+		dp := image.Pt(dx, dy)
+		draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(fb.Size())}, finalCropped, fb.Min, draw.Src)
 		if progressCallback != nil {
-			progressCallback(i+1, totalFiles)
+			progressCallback(1, 1)
+		}
+	} else {
+		sheet = image.NewRGBA(image.Rect(0, 0, TargetSize*totalFiles, TargetSize))
+		for i, path := range files {
+			img := LoadImage(path)
+			cropped := imaging.Crop(img, image.Rect(
+				GlobalSafeZone.MinX, GlobalSafeZone.MinY,
+				GlobalSafeZone.MaxX, GlobalSafeZone.MaxY,
+			))
+			var currentImg image.Image = cropped
+			if !SkipBgRemoval {
+				currentImg = chromakey.Remove(currentImg, ChromaKey, Threshold)
+				if ErodeEdges {
+					if rgba, ok := currentImg.(*image.RGBA); ok {
+						currentImg = chromakey.Erode(rgba)
+					}
+				}
+			}
+			resized := imaging.Fit(currentImg, TargetSize, TargetSize, imaging.Lanczos)
+			b := resized.Bounds()
+			dx := (TargetSize - b.Dx()) / 2
+			dy := (TargetSize - b.Dy()) / 2
+			dp := image.Pt(i*TargetSize+dx, dy)
+			draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
+			if progressCallback != nil {
+				progressCallback(i+1, totalFiles)
+			}
 		}
 	}
 
