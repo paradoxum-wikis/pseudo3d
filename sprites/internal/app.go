@@ -1,0 +1,667 @@
+package internal
+
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
+	"math"
+	"strconv"
+	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
+	"github.com/disintegration/imaging"
+)
+
+type SpriteApp struct {
+	App               fyne.App
+	Window            fyne.Window
+	Files             []string
+	NaturalSizes      []image.Point
+	PreviewImages     []image.Image
+	CurrentImageIndex int
+
+	ImgWidget          *canvas.Image
+	Overlay            *SelectionOverlay
+	StatusLabel        *widget.Label
+	FrameLabel         *widget.Label
+	Slider             *widget.Slider
+	SaveBtn            *widget.Button
+	ProgressBar        *widget.ProgressBar
+	ColorPreview       *canvas.Rectangle
+	PickColorToggleBtn *widget.Button
+
+	TdswPreview *canvas.Image
+	AewPreview  *canvas.Image
+	TdswCanvas  *image.RGBA
+	AewCanvas   *image.RGBA
+
+	LockAspect    bool
+	IsNewDrag     bool
+	ColorPickMode bool
+	StartImgX     float32
+	StartImgY     float32
+	LastPreview   time.Time
+}
+
+func RunUI() {
+	fyneApp := app.New()
+	w := fyneApp.NewWindow("Pseudo3D Sprites")
+	w.Resize(fyne.NewSize(900, 700))
+
+	sa := &SpriteApp{
+		App:        fyneApp,
+		Window:     w,
+		LockAspect: true,
+		IsNewDrag:  true,
+	}
+
+	sa.buildUI()
+	sa.setupShortcuts()
+
+	initialFiles, _ := GetPNGFiles(InputDir)
+	if len(initialFiles) > 0 {
+		sa.loadFrames(initialFiles, nil)
+	}
+
+	w.ShowAndRun()
+}
+
+func (sa *SpriteApp) buildUI() {
+	sa.ImgWidget = canvas.NewImageFromImage(nil)
+	sa.ImgWidget.FillMode = canvas.ImageFillContain
+	sa.Overlay = NewSelectionOverlay()
+	sa.Overlay.GetImageBounds = sa.getRenderedImageBounds
+
+	sa.StatusLabel = widget.NewLabel("No selection...")
+	sa.StatusLabel.Alignment = fyne.TextAlignCenter
+	sa.FrameLabel = widget.NewLabel("Frame 0 / 0")
+
+	sa.buildPreviewPanel()
+	sa.buildSlider()
+	sa.buildProcessBox()
+
+	dragArea := sa.buildDragArea()
+	imageContainer := container.NewStack(sa.ImgWidget, sa.Overlay, dragArea)
+
+	sa.ColorPreview = canvas.NewRectangle(ChromaKey)
+	sa.ColorPreview.SetMinSize(fyne.NewSize(30, 20))
+
+	sa.PickColorToggleBtn = widget.NewButton("Chroma Key Picker", nil)
+	sa.PickColorToggleBtn.OnTapped = func() {
+		sa.ColorPickMode = !sa.ColorPickMode
+		if sa.ColorPickMode {
+			sa.PickColorToggleBtn.SetText("(Click something on the image you fool!)")
+		} else {
+			sa.PickColorToggleBtn.SetText("Chroma Key Picker")
+		}
+	}
+
+	colorBox := container.NewHBox(
+		widget.NewLabel("Key:"),
+		container.NewCenter(sa.ColorPreview),
+		sa.PickColorToggleBtn,
+	)
+
+	helpBtn := widget.NewButton("?", func() {
+		dialog.ShowInformation("Controls",
+			"Draw a selection by dragging on the image.\n\nArrow keys: nudge selection by 1px\nShift + Arrow keys: nudge by 10px",
+			sa.Window)
+	})
+
+	toggleLockBtn := widget.NewButton("Square Ratio", nil)
+	toggleLockBtn.OnTapped = func() {
+		sa.LockAspect = !sa.LockAspect
+		if sa.LockAspect {
+			toggleLockBtn.SetText("Square Ratio")
+		} else {
+			toggleLockBtn.SetText("Freeform")
+		}
+	}
+
+	importBtn := sa.buildImportBtn()
+	settingsBtn := sa.buildSettingsBtn()
+
+	processBox := container.NewStack(sa.SaveBtn, sa.ProgressBar)
+
+	controls := container.NewVBox(
+		container.NewBorder(nil, nil, nil, container.NewHBox(importBtn, settingsBtn, layout.NewSpacer(), colorBox, helpBtn), toggleLockBtn),
+		container.NewBorder(nil, nil, nil, sa.FrameLabel, sa.Slider),
+		processBox,
+		sa.StatusLabel,
+	)
+
+	previewPanel := container.NewVBox(
+		widget.NewLabel("TDS Wiki (10:9)"),
+		container.NewCenter(sa.TdswPreview),
+		widget.NewLabel("ALTERPEDIA (9:10)"),
+		container.NewCenter(sa.AewPreview),
+	)
+
+	sa.Window.SetContent(container.NewBorder(nil, controls, nil, nil,
+		container.NewBorder(nil, nil, nil, previewPanel, imageContainer),
+	))
+}
+
+func (sa *SpriteApp) buildSlider() {
+	sa.Slider = widget.NewSlider(0, 0)
+	sa.Slider.OnChanged = func(v float64) {
+		if len(sa.Files) == 0 {
+			return
+		}
+		newIndex := int(v)
+		if newIndex == sa.CurrentImageIndex {
+			return
+		}
+		sa.CurrentImageIndex = newIndex
+
+		sa.ImgWidget.Image = sa.PreviewImages[sa.CurrentImageIndex]
+		sa.ImgWidget.Refresh()
+
+		nat := sa.NaturalSizes[sa.CurrentImageIndex]
+		sa.Overlay.NatW = float32(nat.X)
+		sa.Overlay.NatH = float32(nat.Y)
+		sa.Overlay.Refresh()
+		sa.FrameLabel.SetText(fmt.Sprintf("Frame %d / %d", sa.CurrentImageIndex+1, len(sa.Files)))
+		sa.updatePreview()
+	}
+}
+
+func (sa *SpriteApp) buildProcessBox() {
+	sa.ProgressBar = widget.NewProgressBar()
+	sa.ProgressBar.Hide()
+
+	sa.SaveBtn = widget.NewButton("Save & Process!", func() {
+		if !sa.Overlay.HasSelection || sa.Overlay.MinX == sa.Overlay.MaxX || len(sa.Files) == 0 {
+			return
+		}
+		GlobalSafeZone = SafeZone{
+			MinX:   int(math.Round(float64(sa.Overlay.MinX))),
+			MinY:   int(math.Round(float64(sa.Overlay.MinY))),
+			MaxX:   int(math.Round(float64(sa.Overlay.MaxX))),
+			MaxY:   int(math.Round(float64(sa.Overlay.MaxY))),
+			Active: true,
+		}
+		SaveSafeZoneConfig()
+
+		sa.SaveBtn.Hide()
+		sa.ProgressBar.SetValue(0)
+		sa.ProgressBar.Show()
+
+		go func() {
+			err := RunBatchProcessing(func(current, total int) {
+				sa.ProgressBar.SetValue(float64(current) / float64(total))
+			})
+
+			fyne.Do(func() {
+				sa.SaveBtn.Show()
+				sa.ProgressBar.Hide()
+
+				if err != nil {
+					dialog.ShowError(err, sa.Window)
+				} else {
+					dialog.ShowInformation("Success", fmt.Sprintf("Heeho! Spritesheet saved as %s (%d frames)!", OutputFile, len(sa.Files)), sa.Window)
+				}
+			})
+		}()
+	})
+}
+
+func (sa *SpriteApp) buildPreviewPanel() {
+	const previewSize = float32(180)
+
+	makeCropPreview := func(clipW, clipH float32) *canvas.Image {
+		img := canvas.NewImageFromImage(nil)
+		img.FillMode = canvas.ImageFillContain
+		img.SetMinSize(fyne.NewSize(clipW, clipH))
+		return img
+	}
+
+	sa.TdswPreview = makeCropPreview(previewSize, previewSize*0.9)
+	sa.AewPreview = makeCropPreview(previewSize*0.9, previewSize)
+	sa.TdswCanvas = image.NewRGBA(image.Rect(0, 0, int(previewSize), int(previewSize*0.9)))
+	sa.AewCanvas = image.NewRGBA(image.Rect(0, 0, int(previewSize*0.9), int(previewSize)))
+}
+
+func (sa *SpriteApp) fillCheckerboard(canvas *image.RGBA) {
+	const size = 10
+	color1 := image.NewUniform(color.RGBA{220, 220, 220, 255})
+	color2 := image.NewUniform(color.RGBA{255, 255, 255, 255})
+	w, h := canvas.Rect.Dx(), canvas.Rect.Dy()
+	for y := 0; y < h; y += size {
+		for x := 0; x < w; x += size {
+			c := color1
+			if ((x/size)+(y/size))&1 != 0 {
+				c = color2
+			}
+			draw.Draw(canvas, image.Rect(x, y, x+size, y+size), c, image.Point{}, draw.Src)
+		}
+	}
+}
+
+func (sa *SpriteApp) updatePreview() {
+	if !sa.Overlay.HasSelection || len(sa.NaturalSizes) == 0 {
+		sa.TdswPreview.Image, sa.AewPreview.Image = nil, nil
+		sa.TdswPreview.Refresh()
+		sa.AewPreview.Refresh()
+		return
+	}
+	nat := sa.NaturalSizes[sa.CurrentImageIndex]
+	minX := min(max(int(math.Round(float64(sa.Overlay.MinX))), 0), nat.X)
+	minY := min(max(int(math.Round(float64(sa.Overlay.MinY))), 0), nat.Y)
+	maxX := min(max(int(math.Round(float64(sa.Overlay.MaxX))), 0), nat.X)
+	maxY := min(max(int(math.Round(float64(sa.Overlay.MaxY))), 0), nat.Y)
+	if maxX <= minX || maxY <= minY {
+		return
+	}
+	pb := sa.PreviewImages[sa.CurrentImageIndex].Bounds()
+	scaleX := float64(pb.Dx()) / float64(nat.X)
+	scaleY := float64(pb.Dy()) / float64(nat.Y)
+	cropped := imaging.Crop(sa.PreviewImages[sa.CurrentImageIndex], image.Rect(
+		int(float64(minX)*scaleX), int(float64(minY)*scaleY),
+		int(float64(maxX)*scaleX), int(float64(maxY)*scaleY),
+	))
+
+	fitAndCenter := func(img image.Image, canvas *image.RGBA) image.Image {
+		w, h := canvas.Rect.Dx(), canvas.Rect.Dy()
+		scaled := imaging.Resize(img, w, 0, imaging.NearestNeighbor)
+		sa.fillCheckerboard(canvas)
+		b := scaled.Bounds()
+		dx := (w - b.Dx()) / 2
+		dy := (h - b.Dy()) / 2
+		draw.Draw(canvas, image.Rectangle{Min: image.Pt(dx, dy), Max: image.Pt(dx, dy).Add(b.Size())}, scaled, b.Min, draw.Over)
+		return canvas
+	}
+
+	sa.TdswPreview.Image = fitAndCenter(cropped, sa.TdswCanvas)
+	sa.AewPreview.Image = fitAndCenter(cropped, sa.AewCanvas)
+	sa.TdswPreview.Refresh()
+	sa.AewPreview.Refresh()
+}
+
+func (sa *SpriteApp) updateStatus(force bool) {
+	if !sa.Overlay.HasSelection {
+		sa.StatusLabel.SetText("No selection...")
+		sa.updatePreview()
+		return
+	}
+	sa.StatusLabel.SetText(fmt.Sprintf("Selected: %dx%d at (%d, %d)",
+		int(sa.Overlay.MaxX-sa.Overlay.MinX), int(sa.Overlay.MaxY-sa.Overlay.MinY),
+		int(sa.Overlay.MinX), int(sa.Overlay.MinY)))
+
+	if force || time.Since(sa.LastPreview) > 16*time.Millisecond {
+		sa.updatePreview()
+		sa.LastPreview = time.Now()
+	}
+}
+
+func (sa *SpriteApp) getRenderedImageBounds() (offX, offY, rendW, rendH float32) {
+	if len(sa.NaturalSizes) == 0 {
+		return 0, 0, 0, 0
+	}
+	nat := sa.NaturalSizes[sa.CurrentImageIndex]
+	containerSize := sa.ImgWidget.Size()
+	scaleX := containerSize.Width / float32(nat.X)
+	scaleY := containerSize.Height / float32(nat.Y)
+	scale := scaleX
+	if scaleY < scaleX {
+		scale = scaleY
+	}
+	rendW = float32(nat.X) * scale
+	rendH = float32(nat.Y) * scale
+	offX = (containerSize.Width - rendW) / 2
+	offY = (containerSize.Height - rendH) / 2
+	return
+}
+
+func (sa *SpriteApp) screenToImage(sx, sy float32) (float32, float32) {
+	if len(sa.NaturalSizes) == 0 {
+		return 0, 0
+	}
+	nat := sa.NaturalSizes[sa.CurrentImageIndex]
+	ox, oy, rw, rh := sa.getRenderedImageBounds()
+	ix := min(max((sx-ox)/rw*float32(nat.X), 0), float32(nat.X))
+	iy := min(max((sy-oy)/rh*float32(nat.Y), 0), float32(nat.Y))
+	return ix, iy
+}
+
+func (sa *SpriteApp) buildDragArea() fyne.Widget {
+	dragArea := &InteractiveArea{
+		GetCursor: func() desktop.Cursor {
+			if sa.ColorPickMode {
+				return desktop.CrosshairCursor
+			}
+			return desktop.PointerCursor
+		},
+		OnDrag: func(e *fyne.DragEvent) {
+			if sa.IsNewDrag {
+				sa.StartImgX, sa.StartImgY = sa.screenToImage(e.Position.X-e.Dragged.DX, e.Position.Y-e.Dragged.DY)
+				sa.IsNewDrag = false
+			}
+			curImgX, curImgY := sa.screenToImage(e.Position.X, e.Position.Y)
+			rawW, rawH := curImgX-sa.StartImgX, curImgY-sa.StartImgY
+
+			var minX, minY, maxX, maxY float32
+			if sa.LockAspect {
+				signW := rawW < 0
+				signH := rawH < 0
+				if signW {
+					rawW = -rawW
+				}
+				if signH {
+					rawH = -rawH
+				}
+				side := min(rawW, rawH)
+				if signW {
+					minX = sa.StartImgX - side
+				} else {
+					minX = sa.StartImgX
+				}
+				if signH {
+					minY = sa.StartImgY - side
+				} else {
+					minY = sa.StartImgY
+				}
+				maxX, maxY = minX+side, minY+side
+			} else {
+				minX, maxX = min(sa.StartImgX, curImgX), max(sa.StartImgX, curImgX)
+				minY, maxY = min(sa.StartImgY, curImgY), max(sa.StartImgY, curImgY)
+			}
+			if maxX > minX && maxY > minY {
+				sa.Overlay.SetSelection(minX, minY, maxX, maxY)
+				sa.updateStatus(false)
+			}
+		},
+		OnDragEnd: func() { sa.IsNewDrag = true; sa.updateStatus(true) },
+		OnTap: func(e *fyne.PointEvent) {
+			if !sa.ColorPickMode || len(sa.NaturalSizes) == 0 {
+				return
+			}
+			ix, iy := sa.screenToImage(e.Position.X, e.Position.Y)
+			nat := sa.NaturalSizes[sa.CurrentImageIndex]
+			previewImg := sa.PreviewImages[sa.CurrentImageIndex]
+			pb := previewImg.Bounds()
+
+			px := int(float64(ix) / float64(nat.X) * float64(pb.Dx()))
+			py := int(float64(iy) / float64(nat.Y) * float64(pb.Dy()))
+
+			px = min(max(px, 0), pb.Dx()-1)
+			py = min(max(py, 0), pb.Dy()-1)
+
+			c := previewImg.At(pb.Min.X+px, pb.Min.Y+py)
+			r, g, b, _ := c.RGBA()
+			ChromaKey = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: 255}
+			HexColor = fmt.Sprintf("%02X%02X%02X", ChromaKey.R, ChromaKey.G, ChromaKey.B)
+			if sa.ColorPreview != nil {
+				sa.ColorPreview.FillColor = ChromaKey
+				sa.ColorPreview.Refresh()
+			}
+			sa.ColorPickMode = false
+			sa.PickColorToggleBtn.SetText("Chroma Key Picker")
+		},
+	}
+	dragArea.ExtendBaseWidget(dragArea)
+	return dragArea
+}
+
+func (sa *SpriteApp) loadFrames(newFiles []string, progressCallback func(float64)) {
+	shinNaturalSizes := make([]image.Point, len(newFiles))
+	shinPreviewImages := make([]image.Image, len(newFiles))
+
+	for i, f := range newFiles {
+		if progressCallback != nil {
+			progressCallback(float64(i) / float64(len(newFiles)))
+		}
+		full := LoadImage(f)
+		b := full.Bounds()
+		shinNaturalSizes[i] = image.Pt(b.Dx(), b.Dy())
+
+		if !SkipPrescale {
+			shinPreviewImages[i] = imaging.Fit(full, PreviewMaxPx, PreviewMaxPx, imaging.Lanczos)
+		} else {
+			shinPreviewImages[i] = full
+		}
+	}
+	if progressCallback != nil {
+		progressCallback(1.0)
+	}
+
+	fyne.Do(func() {
+		sa.Files = newFiles
+		sa.NaturalSizes = shinNaturalSizes
+		sa.PreviewImages = shinPreviewImages
+
+		if len(sa.Files) > 0 {
+			sa.CurrentImageIndex = 0
+			sa.ImgWidget.Image = sa.PreviewImages[0]
+			sa.ImgWidget.Refresh()
+
+			nat := sa.NaturalSizes[0]
+			sa.Overlay.NatW = float32(nat.X)
+			sa.Overlay.NatH = float32(nat.Y)
+
+			if GlobalSafeZone.Active {
+				sa.Overlay.SetSelection(
+					float32(GlobalSafeZone.MinX),
+					float32(GlobalSafeZone.MinY),
+					float32(GlobalSafeZone.MaxX),
+					float32(GlobalSafeZone.MaxY),
+				)
+			}
+			sa.Overlay.Refresh()
+
+			sa.Slider.Max = float64(len(sa.Files) - 1)
+			sa.Slider.SetValue(0)
+			sa.Slider.Refresh()
+			sa.FrameLabel.SetText(fmt.Sprintf("Frame 1 / %d", len(sa.Files)))
+			sa.updatePreview()
+		}
+	})
+}
+
+func (sa *SpriteApp) doImport(limit int) {
+	importProgress := widget.NewProgressBar()
+	importLabel := widget.NewLabel("Importing and preloading images... Please wait.")
+
+	progress := dialog.NewCustomWithoutButtons(
+		"Importing",
+		container.NewVBox(importLabel, importProgress),
+		sa.Window,
+	)
+	progress.Show()
+
+	go func() {
+		imported, err := ImportLatestCaptures(InputDir, "archive", limit)
+		if err == nil && len(imported) > 0 {
+			GlobalSafeZone.Active = false
+			SaveSafeZoneConfig()
+			sa.Overlay.HasSelection = false
+			sa.loadFrames(imported, importProgress.SetValue)
+		}
+
+		fyne.Do(func() {
+			progress.Hide()
+
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("Import failed: %v", err), sa.Window)
+				return
+			}
+
+			if len(imported) > 0 {
+				dialog.ShowInformation("Imported", fmt.Sprintf("Imported %d frames successfully.", len(imported)), sa.Window)
+			} else {
+				dialog.ShowInformation("Imported", "No new frames found to import.", sa.Window)
+			}
+		})
+	}()
+}
+
+func (sa *SpriteApp) buildImportBtn() *widget.Button {
+	return widget.NewButton("Import Latest Captures", func() {
+		opts := []string{"Single Frame (1)", "Full Rotation (24)", "Custom Limit..."}
+
+		var limitSelect *widget.RadioGroup
+		limitSelect = widget.NewRadioGroup(opts, func(string) {})
+		limitSelect.SetSelected(opts[1])
+		limitSelect.Horizontal = false
+
+		dialog.ShowCustomConfirm("Import Images", "Start", "Cancel", limitSelect, func(b bool) {
+			if !b {
+				return
+			}
+			switch limitSelect.Selected {
+			case opts[0]:
+				sa.doImport(1)
+			case opts[1]:
+				sa.doImport(24)
+			case opts[2]:
+				entry := widget.NewEntry()
+				entry.SetText("24")
+				dialog.ShowForm("Custom Import Limit", "Import", "Cancel", []*widget.FormItem{
+					widget.NewFormItem("Frame Count:", entry),
+				}, func(ok bool) {
+					if ok {
+						val, err := strconv.Atoi(entry.Text)
+						if err == nil && val > 0 {
+							sa.doImport(val)
+						} else {
+							dialog.ShowError(fmt.Errorf("invalid number: %s", entry.Text), sa.Window)
+						}
+					}
+				}, sa.Window)
+			}
+		}, sa.Window)
+	})
+}
+
+func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
+	return widget.NewButton("Settings", func() {
+		sizeEntry := widget.NewEntry()
+		sizeEntry.SetText(fmt.Sprintf("%d", TargetSize))
+
+		skipUiCheck := widget.NewCheck("Skip UI on Startup", nil)
+		skipUiCheck.SetChecked(ProcessMode)
+
+		skipBgCheck := widget.NewCheck("Skip Background Removal", nil)
+		skipBgCheck.SetChecked(SkipBgRemoval)
+
+		thresholdEntry := widget.NewEntry()
+		thresholdEntry.SetText(fmt.Sprintf("%.1f", Threshold))
+
+		inEntry := widget.NewEntry()
+		inEntry.SetText(InputDir)
+
+		outEntry := widget.NewEntry()
+		outEntry.SetText(OutputFile)
+
+		erodeCheck := widget.NewCheck("Erode Edges", nil)
+		erodeCheck.SetChecked(ErodeEdges)
+
+		colorEntry := widget.NewEntry()
+		colorEntry.SetText(HexColor)
+
+		skipPrescaleCheck := widget.NewCheck("Skip Prescale (Full Res Preview)", nil)
+		skipPrescaleCheck.SetChecked(SkipPrescale)
+
+		items := []*widget.FormItem{
+			widget.NewFormItem("", skipUiCheck),
+			widget.NewFormItem("Output Size (px)", sizeEntry),
+			widget.NewFormItem("", skipBgCheck),
+			widget.NewFormItem("BG Threshold", thresholdEntry),
+			widget.NewFormItem("Input Directory", inEntry),
+			widget.NewFormItem("Output Filename", outEntry),
+			widget.NewFormItem("", erodeCheck),
+			widget.NewFormItem("Chroma Key Color", colorEntry),
+			widget.NewFormItem("", skipPrescaleCheck),
+		}
+
+		dialog.ShowForm("Settings", "Save", "Cancel", items, func(b bool) {
+			if !b {
+				return
+			}
+			updates := map[string]string{
+				"skip-ui":       strconv.FormatBool(skipUiCheck.Checked),
+				"size":          sizeEntry.Text,
+				"skip-bg":       strconv.FormatBool(skipBgCheck.Checked),
+				"threshold-bg":  thresholdEntry.Text,
+				"in":            inEntry.Text,
+				"out":           outEntry.Text,
+				"erode":         strconv.FormatBool(erodeCheck.Checked),
+				"color-bg":      colorEntry.Text,
+				"skip-prescale": strconv.FormatBool(skipPrescaleCheck.Checked),
+			}
+			err := UpdateConfig(updates)
+			if err != nil {
+				dialog.ShowError(err, sa.Window)
+			} else {
+				var parseErr error
+				ChromaKey, parseErr = ParseHexColor(HexColor)
+				if parseErr == nil && sa.ColorPreview != nil {
+					sa.ColorPreview.FillColor = ChromaKey
+					sa.ColorPreview.Refresh()
+				}
+				dialog.ShowInformation("Settings", "Settings saved!", sa.Window)
+			}
+		}, sa.Window)
+	})
+}
+
+func (sa *SpriteApp) setupShortcuts() {
+	sa.Window.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
+		if !sa.Overlay.HasSelection || len(sa.NaturalSizes) == 0 {
+			return
+		}
+
+		step := float32(1.0)
+		if d, ok := fyne.CurrentApp().Driver().(desktop.Driver); ok {
+			if d.CurrentKeyModifiers()&fyne.KeyModifierShift != 0 {
+				step = 10.0
+			}
+		}
+
+		nat := sa.NaturalSizes[sa.CurrentImageIndex]
+		natW, natH := float32(nat.X), float32(nat.Y)
+		selW, selH := sa.Overlay.MaxX-sa.Overlay.MinX, sa.Overlay.MaxY-sa.Overlay.MinY
+		minX, minY, maxX, maxY := sa.Overlay.MinX, sa.Overlay.MinY, sa.Overlay.MaxX, sa.Overlay.MaxY
+
+		switch k.Name {
+		case fyne.KeyLeft:
+			minX -= step
+			maxX -= step
+		case fyne.KeyRight:
+			minX += step
+			maxX += step
+		case fyne.KeyUp:
+			minY -= step
+			maxY -= step
+		case fyne.KeyDown:
+			minY += step
+			maxY += step
+		default:
+			return
+		}
+
+		if minX < 0 {
+			minX, maxX = 0, selW
+		}
+		if minY < 0 {
+			minY, maxY = 0, selH
+		}
+		if maxX > natW {
+			maxX, minX = natW, natW-selW
+		}
+		if maxY > natH {
+			maxY, minY = natH, natH-selH
+		}
+
+		sa.Overlay.SetSelection(minX, minY, maxX, maxY)
+		sa.updateStatus(true)
+	})
+}
