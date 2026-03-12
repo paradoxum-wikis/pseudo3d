@@ -17,6 +17,7 @@ var (
 	Threshold     float64
 	InputDir      string
 	OutputFile    string
+	OneShotFile   string
 	ErodeEdges    bool
 	HexColor      string
 	SkipPrescale  bool

@@ -209,7 +209,11 @@ func (sa *SpriteApp) buildProcessBox() {
 				if err != nil {
 					dialog.ShowError(err, sa.Window)
 				} else {
-					dialog.ShowInformation("Success", fmt.Sprintf("Heeho! Spritesheet saved as %s (%d frames)!", OutputFile, len(sa.Files)), sa.Window)
+					fname := OutputFile
+					if len(sa.Files) == 1 {
+						fname = OneShotFile
+					}
+					dialog.ShowInformation("Success", fmt.Sprintf("Heeho! Spritesheet saved as %s (%d frames)!", fname, len(sa.Files)), sa.Window)
 				}
 			})
 		}()
@@ -567,6 +571,9 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		outEntry := widget.NewEntry()
 		outEntry.SetText(OutputFile)
 
+		oneShotEntry := widget.NewEntry()
+		oneShotEntry.SetText(OneShotFile)
+
 		erodeCheck := widget.NewCheck("Erode Edges", nil)
 		erodeCheck.SetChecked(ErodeEdges)
 
@@ -583,6 +590,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 			widget.NewFormItem("BG Threshold", thresholdEntry),
 			widget.NewFormItem("Input Directory", inEntry),
 			widget.NewFormItem("Output Filename", outEntry),
+			widget.NewFormItem("One Frame Filename", oneShotEntry),
 			widget.NewFormItem("", erodeCheck),
 			widget.NewFormItem("Chroma Key Color", colorEntry),
 			widget.NewFormItem("", skipPrescaleCheck),
@@ -599,6 +607,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 				"threshold-bg":  thresholdEntry.Text,
 				"in":            inEntry.Text,
 				"out":           outEntry.Text,
+				"out-one":       oneShotEntry.Text,
 				"erode":         strconv.FormatBool(erodeCheck.Checked),
 				"color-bg":      colorEntry.Text,
 				"skip-prescale": strconv.FormatBool(skipPrescaleCheck.Checked),

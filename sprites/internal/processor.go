@@ -112,6 +112,11 @@ func RunBatchProcessing(progressCallback func(current, total int)) error {
 
 	totalFiles := len(files)
 
+	targetOut := OutputFile
+	if totalFiles == 1 {
+		targetOut = strings.TrimSuffix(OneShotFile, ".png") + ".png"
+	}
+
 	var sheet *image.RGBA
 
 	if totalFiles == 1 {
@@ -215,9 +220,9 @@ func RunBatchProcessing(progressCallback func(current, total int)) error {
 		pngData = newPng.Bytes()
 	}
 
-	if _, err := os.Stat(OutputFile); err == nil {
+	if _, err := os.Stat(targetOut); err == nil {
 		os.MkdirAll("archive", 0755)
-		base := strings.TrimSuffix(filepath.Base(OutputFile), filepath.Ext(OutputFile))
+		base := strings.TrimSuffix(filepath.Base(targetOut), filepath.Ext(targetOut))
 		backupName := filepath.Join("archive", fmt.Sprintf("%s.png", base))
 		for i := 2; ; i++ {
 			if _, err := os.Stat(backupName); os.IsNotExist(err) {
@@ -225,10 +230,10 @@ func RunBatchProcessing(progressCallback func(current, total int)) error {
 			}
 			backupName = filepath.Join("archive", fmt.Sprintf("%s-%d.png", base, i))
 		}
-		os.Rename(OutputFile, backupName)
+		os.Rename(targetOut, backupName)
 	}
 
-	out, err := os.Create(OutputFile)
+	out, err := os.Create(targetOut)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
