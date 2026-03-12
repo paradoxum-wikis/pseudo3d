@@ -226,7 +226,7 @@ local function updateUI()
 		end
 		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d",
 			side, heightOffset, pivotOffset, depthOffset, distance, currentFrame, ROTATIONS)
-		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | O: pivot point | P: preview | Q: begin capture"
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | O: pivot point | P: preview | K/L: rotate | Q: capture all | C: capture one"
 	end
 end
 
@@ -276,7 +276,7 @@ local function startPreview()
 	end)
 end
 
-local function captureNext()
+local function captureNext(oneShot)
 	if capturing or currentFrame > ROTATIONS then return end
 	capturing = true
 
@@ -299,26 +299,27 @@ local function captureNext()
 			local saved = results[screenshotCapture]
 			print(string.format("Frame %d/%d captured (saved: %s)", currentFrame, ROTATIONS, tostring(saved)))
 
-			if currentFrame < ROTATIONS then
+			if currentFrame < ROTATIONS and not oneShot then
 				currentFrame += 1
 				setFrame(currentFrame)
 				capturing = false
 				captureNext()
 			else
 				UIS.MouseIconEnabled = true
+				local text = oneShot and "Heeho! Single frame captured!" or "Heeho! All frames captured!"
 				if previewing then
 					previewLabel.Visible = true
 					previewSubLabel.Visible = true
-					previewLabel.Text = "Heeho! All frames captured!"
+					previewLabel.Text = text
 					previewSubLabel.Text = ""
 				else
 					label.Visible = true
 					subLabel.Visible = true
-					label.Text = "Heeho! All frames captured!"
+					label.Text = text
 					subLabel.Text = ""
 				end
 				pivotBillboard.Enabled = showPivot
-				print("Heeho! All frames captured!")
+				print(text)
 				capturing = false
 			end
 		end)
@@ -357,8 +358,13 @@ local keyActions = {
 			setFrame(currentFrame)
 		end
 	end,
+	[Enum.KeyCode.K] = function() startingAngleOffset -= math.pi * 2 / ROTATIONS end,
+	[Enum.KeyCode.L] = function() startingAngleOffset += math.pi * 2 / ROTATIONS end,
 	[Enum.KeyCode.Q] = function()
 		captureNext()
+	end,
+	[Enum.KeyCode.C] = function()
+		captureNext(true)
 	end,
 }
 
