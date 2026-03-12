@@ -25,6 +25,8 @@ local FLAT_LIGHTING   = false     			-- set false to keep your scene lighting as
 local BLOOM_INTENSITY = 0					-- set to nil to leave bloom as is
 local CLEAR_WORKSPACE = true				-- remove everything in workspace except Target model
 local PREVIEW_FPS     = 10					-- frames per second during preview rotation
+local TARGET_NAME     = "Target"			-- name of the model to capture
+local ANIM_NAME       = "Animation"			-- name of the animation to play
 
 local player = Players.LocalPlayer
 for _, gui in ipairs(player.PlayerGui:GetChildren()) do
@@ -69,8 +71,8 @@ previewSubLabel.TextSize = 16
 previewSubLabel.Font = Enum.Font.Gotham
 previewSubLabel.Visible = false
 
-local model = workspace:WaitForChild("Target", 10)
-if not model then return warn("No 'Target' found in workspace!") end
+local model = workspace:WaitForChild(TARGET_NAME, 10)
+if not model then return warn("No '" .. TARGET_NAME .. "' found in workspace!") end
 
 local character = player.Character or player.CharacterAdded:Wait()
 if CLEAR_WORKSPACE then
@@ -111,7 +113,7 @@ for _, desc in ipairs(model:GetDescendants()) do
 	end
 end
 
-local targetAnimSeq = model:FindFirstChild("Animation")
+local targetAnimSeq = model:FindFirstChild(ANIM_NAME)
 local humOrCtrl = model:FindFirstChildOfClass("Humanoid") or model:FindFirstChildOfClass("AnimationController")
 
 if humOrCtrl and targetAnimSeq and targetAnimSeq:IsA("KeyframeSequence") then
