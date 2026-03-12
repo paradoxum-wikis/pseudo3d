@@ -56,7 +56,7 @@ func main() {
 	}
 
 	a := app.New()
-	w := a.NewWindow("Safe Zone Selector")
+	w := a.NewWindow("Pseudo3D Sprites")
 	w.Resize(fyne.NewSize(900, 700))
 
 	var files []string
