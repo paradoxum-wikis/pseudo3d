@@ -380,8 +380,8 @@ local keyActions = {
 	        for _, desc in ipairs(model:GetDescendants()) do
 	            if desc:IsA("BasePart") then
 	                originalProps[desc] = { Color = desc.Color, Material = desc.Material, TextureID = desc:IsA("MeshPart") and desc.TextureID or nil }
-	                desc.Color = Color3.fromRGB(27, 42, 53)
-	                desc.Material = Enum.Material.CrackedLava
+	                desc.Color = Color3.fromRGB(40, 54, 64)
+	                desc.Material = Enum.Material.Basalt
 	                if desc:IsA("MeshPart") then desc.TextureID = "" end
 	            elseif desc:IsA("Decal") or desc:IsA("Texture") or desc:IsA("SurfaceAppearance") or desc:IsA("Clothing") then
 	                originalProps[desc] = desc.Parent
