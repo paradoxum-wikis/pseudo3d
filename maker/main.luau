@@ -196,6 +196,8 @@ local previewing          = false
 local previewConnection   = nil
 local capturing           = false
 local paused              = false
+local isCorpse            = false
+local originalProps       = {}
 
 local function getLookAt()
 	local right   = Vector3.new(math.cos(startingAngleOffset), 0, -math.sin(startingAngleOffset))
@@ -218,8 +220,8 @@ local function updateUI()
 		local animPos = animationTrack and string.format(" | Anim: %.2fs", animationTrack.TimePosition) or ""
 		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f%s | Frame %d/%d",
 			side, heightOffset, pivotOffset, depthOffset, distance, animPos, currentFrame, ROTATIONS)
-		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | N/M: anim | O: pivot point | P: preview | K/L: rotate"
-		botLabel.Text = "Q: capture all frames   |   C: capture one frame"
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | N/M: anim | O: pivot point | P: preview | K/L: rotate | 1: corpse"
+		botLabel.Text = "Q: capture all frames | C: capture one frame"
 		botLabel.Visible = true
 	end
 end
@@ -370,6 +372,34 @@ local keyActions = {
 	end,
 	[Enum.KeyCode.K] = function() startingAngleOffset -= math.pi * 2 / ROTATIONS end,
 	[Enum.KeyCode.L] = function() startingAngleOffset += math.pi * 2 / ROTATIONS end,
+	[Enum.KeyCode.One] = function()
+	    isCorpse = not isCorpse
+	    if isCorpse then
+	        table.clear(originalProps)
+	        for _, desc in ipairs(model:GetDescendants()) do
+	            if desc:IsA("BasePart") then
+	                originalProps[desc] = { Color = desc.Color, Material = desc.Material, TextureID = desc:IsA("MeshPart") and desc.TextureID or nil }
+	                desc.Color = Color3.fromRGB(27, 42, 53)
+	                desc.Material = Enum.Material.CrackedLava
+	                if desc:IsA("MeshPart") then desc.TextureID = "" end
+	            elseif desc:IsA("Decal") or desc:IsA("Texture") or desc:IsA("SurfaceAppearance") or desc:IsA("Clothing") then
+	                originalProps[desc] = desc.Parent
+	                desc.Parent = nil
+	            end
+	        end
+	    else
+	        for obj, data in pairs(originalProps) do
+	            if typeof(data) == "table" then
+	                obj.Color = data.Color
+	                obj.Material = data.Material
+	                if data.TextureID then obj.TextureID = data.TextureID end
+	            else
+	                obj.Parent = data
+	            end
+	        end
+	        table.clear(originalProps)
+	    end
+	end,
 	[Enum.KeyCode.Q] = function()
 		captureNext()
 	end,
