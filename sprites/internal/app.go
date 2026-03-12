@@ -197,7 +197,9 @@ func (sa *SpriteApp) buildProcessBox() {
 
 		go func() {
 			err := RunBatchProcessing(func(current, total int) {
-				sa.ProgressBar.SetValue(float64(current) / float64(total))
+				fyne.Do(func() {
+					sa.ProgressBar.SetValue(float64(current) / float64(total))
+				})
 			})
 
 			fyne.Do(func() {
@@ -417,7 +419,9 @@ func (sa *SpriteApp) loadFrames(newFiles []string, progressCallback func(float64
 
 	for i, f := range newFiles {
 		if progressCallback != nil {
-			progressCallback(float64(i) / float64(len(newFiles)))
+			fyne.Do(func() {
+				progressCallback(float64(i) / float64(len(newFiles)))
+			})
 		}
 		full := LoadImage(f)
 		b := full.Bounds()
@@ -430,7 +434,9 @@ func (sa *SpriteApp) loadFrames(newFiles []string, progressCallback func(float64
 		}
 	}
 	if progressCallback != nil {
-		progressCallback(1.0)
+		fyne.Do(func() {
+			progressCallback(1.0)
+		})
 	}
 
 	fyne.Do(func() {
