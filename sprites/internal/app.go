@@ -92,7 +92,7 @@ func RunUI() {
 	initialFiles, _ := GetPNGFiles(InputDir)
 	if len(initialFiles) > 0 {
 		startupProgress := widget.NewProgressBar()
-		startupLabel := widget.NewLabel("Hee! I'm loading your frames.. ho!")
+		startupLabel := widget.NewLabel("Hee! I'm loading your frames... Ho!")
 
 		loadingDialog := dialog.NewCustomWithoutButtons(
 			"Starting Up",
@@ -729,7 +729,7 @@ func (sa *SpriteApp) loadFrames(newFiles []string, progressCallback func(float64
 
 func (sa *SpriteApp) doImport(limit int) {
 	importProgress := widget.NewProgressBar()
-	importLabel := widget.NewLabel("Importing and preloading images... Please wait.")
+	importLabel := widget.NewLabel("Importing and preloading images... Please wait..!")
 
 	progress := dialog.NewCustomWithoutButtons(
 		"Importing",
@@ -765,15 +765,15 @@ func (sa *SpriteApp) doImport(limit int) {
 }
 
 func (sa *SpriteApp) buildImportBtn() *widget.Button {
-	return widget.NewButton("Import Latest Captures", func() {
-		opts := []string{"Single Frame (1)", "Full Rotation (24)", "Custom Limit..."}
+	return widget.NewButton("Import Captures", func() {
+		opts := []string{"Single Frame (1F)", "Full Rotation (24F)", "Custom Limit..."}
 
 		var limitSelect *widget.RadioGroup
 		limitSelect = widget.NewRadioGroup(opts, func(string) {})
 		limitSelect.SetSelected(opts[1])
 		limitSelect.Horizontal = false
 
-		dialog.ShowCustomConfirm("Import Images", "Start", "Cancel", limitSelect, func(b bool) {
+		dialog.ShowCustomConfirm("Import Latest Captures", "Start", "Cancel", limitSelect, func(b bool) {
 			if !b {
 				return
 			}
@@ -841,7 +841,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 			widget.NewFormItem("BG Threshold", thresholdEntry),
 			widget.NewFormItem("Input Directory", inEntry),
 			widget.NewFormItem("Output Filename", outEntry),
-			widget.NewFormItem("One Frame Filename", oneShotEntry),
+			widget.NewFormItem("1F Output Filename", oneShotEntry),
 			widget.NewFormItem("", erodeCheck),
 			widget.NewFormItem("Chroma Key Color", colorEntry),
 			widget.NewFormItem("", skipPrescaleCheck),
