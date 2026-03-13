@@ -138,14 +138,42 @@ func ApplyPendingUpdate() bool {
 		return false
 	}
 	exeDir := filepath.Dir(exePath)
+	backupDir := filepath.Join(exeDir, "archive", "backup")
+
+	os.RemoveAll(backupDir)
+	os.MkdirAll(backupDir, 0755)
 
 	if strings.HasSuffix(archivePath, ".tar.gz") {
-		return applyTarGz(archivePath, exeDir) == nil
+		return applyTarGz(archivePath, exeDir, backupDir) == nil
 	}
-	return applyZip(archivePath, exeDir) == nil
+	return applyZip(archivePath, exeDir, backupDir) == nil
 }
 
-func applyZip(zipPath, exeDir string) error {
+func backupFile(srcPath, backupDir string) error {
+	if _, err := os.Stat(srcPath); err != nil {
+		return nil
+	}
+	rel, _ := filepath.Rel(filepath.Dir(backupDir), srcPath)
+	dst := filepath.Join(backupDir, rel)
+	os.MkdirAll(filepath.Dir(dst), 0755)
+
+	src, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	dstf, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstf.Close()
+
+	_, err = io.Copy(dstf, src)
+	return err
+}
+
+func applyZip(zipPath, exeDir, backupDir string) error {
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return err
@@ -164,9 +192,7 @@ func applyZip(zipPath, exeDir string) error {
 		}
 		os.MkdirAll(filepath.Dir(outPath), 0755)
 
-		if runtime.GOOS == "windows" {
-			os.Rename(outPath, outPath+".old")
-		}
+		backupFile(outPath, backupDir)
 
 		func() {
 			src, err := file.Open()
@@ -189,7 +215,7 @@ func applyZip(zipPath, exeDir string) error {
 	return nil
 }
 
-func applyTarGz(tarPath, exeDir string) error {
+func applyTarGz(tarPath, exeDir, backupDir string) error {
 	f, err := os.Open(tarPath)
 	if err != nil {
 		return err
@@ -218,6 +244,8 @@ func applyTarGz(tarPath, exeDir string) error {
 			continue
 		}
 		os.MkdirAll(filepath.Dir(outPath), 0755)
+
+		backupFile(outPath, backupDir)
 
 		func() {
 			dst, err := os.Create(outPath)
