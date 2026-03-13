@@ -36,8 +36,8 @@ func getOpaqueBounds(img image.Image) image.Rectangle {
 
 	if pix != nil {
 		for y := b.Min.Y; y < b.Max.Y; y++ {
-			off := (y - b.Min.Y) * stride
-			row := pix[off : off+width4]
+			off := (y-b.Min.Y)*stride + b.Min.X*4
+			row := pix[off : off+b.Dx()*4]
 			for x := 0; x < width4; x += 4 {
 				if row[x+3] > 0 {
 					found = true
