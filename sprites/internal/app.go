@@ -63,10 +63,9 @@ type SpriteApp struct {
 	LastPreview   time.Time
 }
 
-func RunUI() {
-	exePath, _ := os.Executable()
-	os.Remove(exePath + ".old")
+var StartupUpdateError error
 
+func RunUI() {
 	fyneApp := app.New()
 	w := fyneApp.NewWindow("Pseudo3D Sprites")
 	w.Resize(fyne.NewSize(900, 700))
@@ -80,7 +79,13 @@ func RunUI() {
 
 	sa.buildUI()
 	sa.setupShortcuts()
-	sa.checkApplyPendingUpdate()
+
+	if StartupUpdateError != nil {
+		dialog.ShowInformation("Update Failed", StartupUpdateError.Error(), sa.Window)
+	} else {
+		sa.checkChangelog()
+	}
+
 	sa.startUpdateCheck()
 
 	initialFiles, _ := GetPNGFiles(InputDir)
@@ -329,20 +334,19 @@ func (sa *SpriteApp) handleUpdate() {
 	}()
 }
 
-func (sa *SpriteApp) checkApplyPendingUpdate() {
-	if err := ApplyPendingUpdate(); err == nil {
-		exePath, _ := os.Executable()
-		path := filepath.Join(filepath.Dir(exePath), "archive", "changelog.md")
-		if data, err := os.ReadFile(path); err == nil {
-			os.Remove(path)
+func (sa *SpriteApp) checkChangelog() {
+	exePath, _ := os.Executable()
+	path := filepath.Join(filepath.Dir(exePath), "archive", "changelog.md")
 
-			md := widget.NewRichTextFromMarkdown(string(data))
-			md.Wrapping = fyne.TextWrapWord
-			scroll := container.NewScroll(md)
-			scroll.SetMinSize(fyne.NewSize(500, 400))
+	if data, err := os.ReadFile(path); err == nil {
+		os.Remove(path)
 
-			dialog.ShowCustom("Update Applied! Heeho!", "Thanks.", scroll, sa.Window)
-		}
+		md := widget.NewRichTextFromMarkdown(string(data))
+		md.Wrapping = fyne.TextWrapWord
+		scroll := container.NewScroll(md)
+		scroll.SetMinSize(fyne.NewSize(500, 400))
+
+		dialog.ShowCustom("Update Applied! Heeho!", "Thanks.", scroll, sa.Window)
 	}
 }
 

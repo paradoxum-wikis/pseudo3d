@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	"pseudo3d-sprites/internal"
 )
@@ -26,14 +27,24 @@ func init() {
 
 func main() {
 	internal.CurrentVersion = version
+	exePath, _ := os.Executable()
+	_ = os.Remove(exePath + ".old")
+
+	applied, err := internal.ApplyPendingUpdate()
+	if err != nil {
+		internal.StartupUpdateError = err
+	} else if applied {
+		exec.Command(exePath, os.Args[1:]...).Start()
+		os.Exit(0)
+	}
 
 	flag.Parse()
 	internal.LoadConfiguration()
 
-	var err error
-	internal.ChromaKey, err = internal.ParseHexColor(internal.HexColor)
-	if err != nil {
-		log.Fatalf("Error parsing chroma key color: %v\n", err)
+	var errParse error
+	internal.ChromaKey, errParse = internal.ParseHexColor(internal.HexColor)
+	if errParse != nil {
+		log.Fatalf("Error parsing chroma key color: %v\n", errParse)
 	}
 
 	if internal.ProcessMode {

@@ -142,19 +142,24 @@ func DownloadUpdate(info *UpdateInfo) error {
 	return err
 }
 
-func ApplyPendingUpdate() error {
+func ApplyPendingUpdate() (bool, error) {
 	archivePath := getUpdatePath()
 	if _, err := os.Stat(archivePath); err != nil {
-		return nil
+		return false, nil
 	}
 
 	exePath, _ := os.Executable()
 	exeDir := filepath.Dir(exePath)
 
+	lockFile := filepath.Join(exeDir, "pseudo3d-maker.rbxl.lock")
+	if _, err := os.Stat(lockFile); err == nil {
+		return false, errors.New("Roblox Studio is currently open. Please close it to apply the update.")
+	}
+
 	exeOld := exePath + ".old"
 	_ = os.Remove(exeOld)
 	if err := os.Rename(exePath, exeOld); err != nil {
-		return fmt.Errorf("could not rename exe: %v", err)
+		return false, fmt.Errorf("could not rename exe: %v", err)
 	}
 
 	var err error
@@ -166,28 +171,11 @@ func ApplyPendingUpdate() error {
 
 	if err != nil {
 		_ = os.Rename(exeOld, exePath)
-		return fmt.Errorf("update failed (check if Roblox Studio is open): %v", err)
+		return false, fmt.Errorf("extraction failed: %v", err)
 	}
 
 	os.Remove(archivePath)
-	return nil
-}
-
-func FinalizeAndRestart() error {
-	if err := ApplyPendingUpdate(); err != nil {
-		return err
-	}
-
-	exePath, _ := os.Executable()
-	_, err := os.StartProcess(exePath, os.Args, &os.ProcAttr{
-		Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
-	})
-	if err != nil {
-		return err
-	}
-
-	os.Exit(0)
-	return nil
+	return true, nil
 }
 
 func applyZip(zipPath, exeDir string) error {
