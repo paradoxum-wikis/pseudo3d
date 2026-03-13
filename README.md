@@ -4,7 +4,7 @@ In order to use this toolset, look at the ["Releases"](https://github.com/parado
 
 The archives available for downloads are:
  - **pseudo3d-windows-amd64.zip**: Windows 64-bit
- - **pseudo3d-linux-amd64.tar.xz**: Linux 64-bit
+ - **pseudo3d-linux-amd64.tar.gz**: Linux 64-bit
  - **pseudo3d-macos-amd64.zip**: macOS 64-bit
  - **pseudo3d-macos-arm64.zip**: macOS Apple Silicon
 
