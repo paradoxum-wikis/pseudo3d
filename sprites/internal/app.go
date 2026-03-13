@@ -367,7 +367,7 @@ func (sa *SpriteApp) checkChangelog() {
 		scroll := container.NewScroll(md)
 		scroll.SetMinSize(fyne.NewSize(500, 400))
 
-		dialog.ShowCustom("Update Applied! Heeho!", "Thanks.", scroll, sa.Window)
+		dialog.ShowCustom("Update Applied! Heeho!", "Thanks", scroll, sa.Window)
 	}
 }
 
