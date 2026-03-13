@@ -23,8 +23,6 @@ func getOpaqueBounds(img image.Image) image.Rectangle {
 	maxX, maxY := math.MinInt32, math.MinInt32
 	found := false
 
-	width4 := b.Dx() * 4
-
 	var pix []uint8
 	var stride int
 	switch src := img.(type) {
@@ -38,7 +36,7 @@ func getOpaqueBounds(img image.Image) image.Rectangle {
 		for y := b.Min.Y; y < b.Max.Y; y++ {
 			off := (y-b.Min.Y)*stride + b.Min.X*4
 			row := pix[off : off+b.Dx()*4]
-			for x := 0; x < width4; x += 4 {
+			for x := 0; x < b.Dx()*4; x += 4 {
 				if row[x+3] > 0 {
 					found = true
 					realX := b.Min.X + x/4
@@ -85,6 +83,35 @@ func getOpaqueBounds(img image.Image) image.Rectangle {
 	return image.Rect(minX, minY, maxX+1, maxY+1)
 }
 
+func processImage(path string) (image.Image, error) {
+	img := LoadImage(path)
+	if img == nil {
+		return nil, fmt.Errorf("failed to load %s", path)
+	}
+
+	cropped := imaging.Crop(img, image.Rect(
+		GlobalSafeZone.MinX, GlobalSafeZone.MinY,
+		GlobalSafeZone.MaxX, GlobalSafeZone.MaxY,
+	))
+
+	var current image.Image = cropped
+	if !SkipBgRemoval {
+		current = chromakey.Remove(current, ChromaKey, Threshold)
+		if ErodeEdges {
+			if rgba, ok := current.(*image.RGBA); ok {
+				current = chromakey.Erode(rgba)
+			}
+		}
+	}
+
+	tight := getOpaqueBounds(current)
+	if tight.Empty() {
+		tight = current.Bounds()
+	}
+
+	return imaging.Crop(current, tight), nil
+}
+
 func RunBatchProcessing(files []string, progressCallback func(current, total int)) error {
 	OutputFile = strings.TrimSuffix(OutputFile, ".png") + ".png"
 
@@ -113,41 +140,17 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 	var sheet *image.RGBA
 
 	if totalFiles == 1 {
-		img := LoadImage(files[0])
-
-		cropped := imaging.Crop(img, image.Rect(
-			GlobalSafeZone.MinX, GlobalSafeZone.MinY,
-			GlobalSafeZone.MaxX, GlobalSafeZone.MaxY,
-		))
-
-		var currentImg image.Image = cropped
-		if !SkipBgRemoval {
-			currentImg = chromakey.Remove(currentImg, ChromaKey, Threshold)
-			if ErodeEdges {
-				if rgba, ok := currentImg.(*image.RGBA); ok {
-					currentImg = chromakey.Erode(rgba)
-				}
-			}
+		finalCropped, err := processImage(files[0])
+		if err != nil {
+			return err
 		}
-
-		tight := getOpaqueBounds(currentImg)
-
-		if tight.Empty() {
-			tight = currentImg.Bounds()
-		}
-
-		finalCropped := imaging.Crop(currentImg, tight)
 		fb := finalCropped.Bounds()
-
 		w, h := fb.Dx(), fb.Dy()
 		sq := max(w, h)
-
 		if SizeOne {
 			sq = SizeTarget
 		}
-
 		sheet = image.NewRGBA(image.Rect(0, 0, sq, sq))
-
 		if SizeOne {
 			resized := imaging.Fit(finalCropped, SizeTarget, SizeTarget, imaging.Lanczos)
 			b := resized.Bounds()
@@ -157,36 +160,19 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 			dp := image.Pt((sq-w)/2, (sq-h)/2)
 			draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(fb.Size())}, finalCropped, fb.Min, draw.Src)
 		}
-
-		if progressCallback != nil {
-			progressCallback(1, 1)
-		}
+		progressCallback(1, 1)
 	} else {
 		sheet = image.NewRGBA(image.Rect(0, 0, SizeTarget*totalFiles, SizeTarget))
 		for i, path := range files {
-			img := LoadImage(path)
-			cropped := imaging.Crop(img, image.Rect(
-				GlobalSafeZone.MinX, GlobalSafeZone.MinY,
-				GlobalSafeZone.MaxX, GlobalSafeZone.MaxY,
-			))
-			var currentImg image.Image = cropped
-			if !SkipBgRemoval {
-				currentImg = chromakey.Remove(currentImg, ChromaKey, Threshold)
-				if ErodeEdges {
-					if rgba, ok := currentImg.(*image.RGBA); ok {
-						currentImg = chromakey.Erode(rgba)
-					}
-				}
+			finalCropped, err := processImage(path)
+			if err != nil {
+				return err
 			}
-			resized := imaging.Fit(currentImg, SizeTarget, SizeTarget, imaging.Lanczos)
+			resized := imaging.Fit(finalCropped, SizeTarget, SizeTarget, imaging.Lanczos)
 			b := resized.Bounds()
-			dx := (SizeTarget - b.Dx()) / 2
-			dy := (SizeTarget - b.Dy()) / 2
-			dp := image.Pt(i*SizeTarget+dx, dy)
+			dp := image.Pt(i*SizeTarget+(SizeTarget-b.Dx())/2, (SizeTarget-b.Dy())/2)
 			draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
-			if progressCallback != nil {
-				progressCallback(i+1, totalFiles)
-			}
+			progressCallback(i+1, totalFiles)
 		}
 	}
 
