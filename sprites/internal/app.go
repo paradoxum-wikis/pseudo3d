@@ -90,7 +90,23 @@ func RunUI() {
 
 	initialFiles, _ := GetPNGFiles(InputDir)
 	if len(initialFiles) > 0 {
-		go sa.loadFrames(initialFiles, nil)
+		startupProgress := widget.NewProgressBar()
+		startupLabel := widget.NewLabel("Hee! I'm loading your frames.. ho!")
+
+		loadingDialog := dialog.NewCustomWithoutButtons(
+			"Starting Up",
+			container.NewVBox(startupLabel, startupProgress),
+			sa.Window,
+		)
+		loadingDialog.Show()
+
+		go func() {
+			sa.loadFrames(initialFiles, startupProgress.SetValue)
+
+			fyne.Do(func() {
+				loadingDialog.Hide()
+			})
+		}()
 	}
 
 	w.ShowAndRun()
