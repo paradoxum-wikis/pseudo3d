@@ -188,9 +188,9 @@ func (sa *SpriteApp) buildUI() {
 	)
 
 	previewPanel := container.NewVBox(
-		widget.NewLabel("TDS Wiki (10:9)"),
+		widget.NewLabelWithStyle("TDS Wiki (10:9)", fyne.TextAlignCenter, fyne.TextStyle{}),
 		container.NewCenter(sa.TdswPreview),
-		widget.NewLabel("ALTERPEDIA (9:10)"),
+		widget.NewLabelWithStyle("ALTERPEDIA (9:10)", fyne.TextAlignCenter, fyne.TextStyle{}),
 		container.NewCenter(sa.AewPreview),
 	)
 
