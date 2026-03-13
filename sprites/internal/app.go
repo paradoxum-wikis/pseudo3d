@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -345,7 +346,11 @@ func (sa *SpriteApp) handleUpdate() {
 				dialog.ShowError(err, sa.Window)
 				return
 			}
-			sa.setChip("update ready", "restart to apply", sa.Window.Close)
+			sa.setChip("update ready", "restart to apply", func() {
+				exePath, _ := os.Executable()
+				exec.Command(exePath, os.Args[1:]...).Start()
+				os.Exit(0)
+			})
 		})
 	}()
 }
