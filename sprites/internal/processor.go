@@ -192,7 +192,7 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 		chunkType := []byte("tEXt")
 		chunks := []struct{ key, val string }{
 			{"Software", "Pseudo3D"},
-			{"Author", "Paradoxum Wikis' Pseudo3D"},
+			{"Author", "Paradoxum Wikis Member"},
 			{"Description", "Generated using Paradoxum Wikis' Pseudo3D"},
 			{"Copyright", "https://github.com/paradoxum-wikis/pseudo3d"},
 		}
