@@ -83,7 +83,6 @@ func CheckForUpdates(currentVersion string) (*UpdateInfo, string, error) {
 		State:       UpdateStateReady,
 		LatestTag:   latest,
 		DownloadURL: downloadURL,
-		HasUpdate:   compareVersions(latest, normalizeVersion(currentVersion)) > 0,
 	}
 
 	if currentVersion == "seven" {
