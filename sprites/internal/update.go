@@ -129,11 +129,11 @@ func DownloadUpdate(info *UpdateInfo) error {
 }
 
 func ApplyPendingUpdate() bool {
-	archivePath := loadPreference("updates.pending_zip")
-	if archivePath == "" {
+	archivePath := getUpdatePath()
+	if _, err := os.Stat(archivePath); err != nil {
 		return false
 	}
-	defer os.Remove(getUpdatePath())
+	defer os.Remove(archivePath)
 
 	exePath, err := os.Executable()
 	if err != nil {
@@ -404,12 +404,6 @@ func normalizeVersion(v string) string {
 func loadPreference(key string) string {
 	if key == "updates.token" {
 		return GithubToken
-	}
-	if key == "updates.pending_zip" {
-		archivePath := getUpdatePath()
-		if _, err := os.Stat(archivePath); err == nil {
-			return archivePath
-		}
 	}
 	return ""
 }
