@@ -160,7 +160,6 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 			dp := image.Pt((sq-w)/2, (sq-h)/2)
 			draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(fb.Size())}, finalCropped, fb.Min, draw.Src)
 		}
-		progressCallback(1, 1)
 	} else {
 		sheet = image.NewRGBA(image.Rect(0, 0, SizeTarget*totalFiles, SizeTarget))
 		for i, path := range files {
@@ -172,7 +171,9 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 			b := resized.Bounds()
 			dp := image.Pt(i*SizeTarget+(SizeTarget-b.Dx())/2, (SizeTarget-b.Dy())/2)
 			draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
-			progressCallback(i+1, totalFiles)
+			if progressCallback != nil {
+				progressCallback(i+1, totalFiles)
+			}
 		}
 	}
 
