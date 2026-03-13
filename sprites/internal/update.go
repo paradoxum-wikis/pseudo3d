@@ -178,6 +178,26 @@ func ApplyPendingUpdate() (bool, error) {
 	return true, nil
 }
 
+func extractFile(src io.Reader, outPath string, isDir bool, mode os.FileMode) error {
+	if isDir {
+		return os.MkdirAll(outPath, 0755)
+	}
+
+	os.MkdirAll(filepath.Dir(outPath), 0755)
+
+	dst, err := os.Create(outPath)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
+	if err == nil && runtime.GOOS != "windows" && mode&0111 != 0 {
+		os.Chmod(outPath, 0755)
+	}
+	return err
+}
+
 func applyZip(zipPath, exeDir string) error {
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -190,32 +210,15 @@ func applyZip(zipPath, exeDir string) error {
 			continue
 		}
 
-		outPath := filepath.Join(exeDir, file.Name)
-		if file.FileInfo().IsDir() {
-			os.MkdirAll(outPath, 0755)
-			continue
-		}
-		os.MkdirAll(filepath.Dir(outPath), 0755)
-
 		err = func() error {
 			src, err := file.Open()
 			if err != nil {
 				return err
 			}
 			defer src.Close()
-
-			dst, err := os.Create(outPath)
-			if err != nil {
-				return err
-			}
-			defer dst.Close()
-
-			_, err = io.Copy(dst, src)
-			if err == nil && runtime.GOOS != "windows" && file.Mode()&0111 != 0 {
-				os.Chmod(outPath, 0755)
-			}
-			return err
+			return extractFile(src, filepath.Join(exeDir, file.Name), file.FileInfo().IsDir(), file.Mode())
 		}()
+
 		if err != nil {
 			return err
 		}
@@ -246,27 +249,7 @@ func applyTarGz(tarPath, exeDir string) error {
 			continue
 		}
 
-		outPath := filepath.Join(exeDir, header.Name)
-		if header.FileInfo().IsDir() {
-			os.MkdirAll(outPath, 0755)
-			continue
-		}
-		os.MkdirAll(filepath.Dir(outPath), 0755)
-
-		err = func() error {
-			dst, err := os.Create(outPath)
-			if err != nil {
-				return err
-			}
-			defer dst.Close()
-
-			_, err = io.Copy(dst, tr)
-			if err == nil && runtime.GOOS != "windows" && header.FileInfo().Mode()&0111 != 0 {
-				os.Chmod(outPath, 0755)
-			}
-			return err
-		}()
-		if err != nil {
+		if err := extractFile(tr, filepath.Join(exeDir, header.Name), header.FileInfo().IsDir(), header.FileInfo().Mode()); err != nil {
 			return err
 		}
 	}
