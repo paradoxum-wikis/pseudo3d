@@ -9,6 +9,8 @@ import (
 	"pseudo3d-sprites/internal"
 )
 
+var version = "seven"
+
 func init() {
 	flag.BoolVar(&internal.ProcessMode, "skip-ui", false, "Skip UI and directly run batch processing")
 	flag.IntVar(&internal.TargetSize, "size", 512, "Output size of the square frames (for example, 300 for 300x300)")
@@ -23,6 +25,8 @@ func init() {
 }
 
 func main() {
+	internal.CurrentVersion = version
+
 	flag.Parse()
 	internal.LoadConfiguration()
 

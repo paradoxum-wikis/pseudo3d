@@ -6,6 +6,8 @@ import (
 	"image/color"
 	"image/draw"
 	"math"
+	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -40,6 +42,12 @@ type SpriteApp struct {
 	ColorPreview       *canvas.Rectangle
 	PickColorToggleBtn *widget.Button
 
+	pendingUpdateInfo *UpdateInfo
+	UpdateChipLabel   *widget.Label
+	UpdateChipAction  *widget.Hyperlink
+	Username          string
+	UserAvatar        *canvas.Image
+
 	TdswPreview *canvas.Image
 	AewPreview  *canvas.Image
 	TdswCanvas  *image.RGBA
@@ -67,6 +75,8 @@ func RunUI() {
 
 	sa.buildUI()
 	sa.setupShortcuts()
+	sa.checkAndApplyPendingUpdate()
+	sa.startUpdateCheck()
 
 	initialFiles, _ := GetPNGFiles(InputDir)
 	if len(initialFiles) > 0 {
@@ -86,6 +96,7 @@ func (sa *SpriteApp) buildUI() {
 	sa.StatusLabel.Alignment = fyne.TextAlignCenter
 	sa.FrameLabel = widget.NewLabel("Frame 0 / 0")
 
+	sa.buildUpdateControls()
 	sa.buildPreviewPanel()
 	sa.buildSlider()
 	sa.buildProcessBox()
@@ -134,11 +145,19 @@ func (sa *SpriteApp) buildUI() {
 	sa.ButtonBox = container.NewBorder(nil, nil, nil, sa.SaveOneBtn, sa.SaveBtn)
 	processBox := container.NewStack(sa.ButtonBox, sa.ProgressBar)
 
+	updateBox := container.NewHBox(
+		container.NewCenter(sa.UserAvatar),
+		sa.UpdateChipLabel,
+		sa.UpdateChipAction,
+	)
+
+	footer := container.NewBorder(nil, nil, nil, updateBox, sa.StatusLabel)
+
 	controls := container.NewVBox(
 		container.NewBorder(nil, nil, nil, container.NewHBox(importBtn, settingsBtn, layout.NewSpacer(), colorBox, helpBtn), toggleLockBtn),
 		container.NewBorder(nil, nil, nil, sa.FrameLabel, sa.Slider),
 		processBox,
-		sa.StatusLabel,
+		footer,
 	)
 
 	previewPanel := container.NewVBox(
@@ -151,6 +170,162 @@ func (sa *SpriteApp) buildUI() {
 	sa.Window.SetContent(container.NewBorder(nil, controls, nil, nil,
 		container.NewBorder(nil, nil, nil, previewPanel, imageContainer),
 	))
+}
+
+func (sa *SpriteApp) loadAvatar(username string) {
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get("https://github.com/" + username + ".png?size=24")
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if img, _, err := image.Decode(resp.Body); err == nil {
+		fyne.Do(func() {
+			sa.UserAvatar.Image = img
+			sa.UserAvatar.Show()
+			sa.UserAvatar.Refresh()
+		})
+	}
+}
+
+func (sa *SpriteApp) buildUpdateControls() {
+	sa.UpdateChipLabel = widget.NewLabel("checking...")
+	sa.UpdateChipLabel.TextStyle = fyne.TextStyle{Italic: true}
+
+	sa.UpdateChipAction = widget.NewHyperlink("", nil)
+	sa.UpdateChipAction.Hide()
+
+	sa.UserAvatar = canvas.NewImageFromImage(nil)
+	sa.UserAvatar.FillMode = canvas.ImageFillContain
+	sa.UserAvatar.SetMinSize(fyne.NewSize(24, 24))
+	sa.UserAvatar.Hide()
+}
+
+func (sa *SpriteApp) setChip(label, actionText string, action func()) {
+	sa.UpdateChipLabel.SetText(label)
+	if actionText != "" && action != nil {
+		sa.UpdateChipAction.SetText(actionText)
+		sa.UpdateChipAction.OnTapped = action
+		sa.UpdateChipAction.Show()
+	} else {
+		sa.UpdateChipAction.Hide()
+	}
+}
+
+func (sa *SpriteApp) startUpdateCheck() {
+	go func() {
+		info, username, err := CheckForUpdates(CurrentVersion)
+
+		fyne.Do(func() {
+			sa.Username = username
+			prefix := ""
+			if username != "" {
+				prefix = "@" + username + "  -  "
+				go sa.loadAvatar(username)
+			}
+
+			if err != nil {
+				sa.setChip(err.Error(), "log in", sa.handleLogin)
+				return
+			}
+
+			switch info.State {
+			case UpdateStateLoginRequired:
+				sa.setChip(prefix+"log in to check updates", "log in", sa.handleLogin)
+			case UpdateStateReady:
+				if info.HasUpdate {
+					sa.pendingUpdateInfo = info
+					sa.setChip(prefix+"update available: "+info.LatestTag, "update now", sa.handleUpdate)
+				} else {
+					sa.setChip(prefix+"up to date", "", nil)
+				}
+			}
+		})
+	}()
+}
+
+func (sa *SpriteApp) handleLogin() {
+	verificationURI, userCode, err := BeginGitHubDeviceLogin()
+	if err != nil {
+		dialog.ShowError(err, sa.Window)
+		return
+	}
+
+	parsedURL, _ := url.Parse(verificationURI)
+
+	content := container.NewVBox(
+		widget.NewLabel(fmt.Sprintf("Enter this code when prompted:\n\n%s", userCode)),
+		widget.NewHyperlink("Browser didn't open? Click this!", parsedURL),
+	)
+	dialog.ShowCustom("GitHub Login", "OK", content, sa.Window)
+
+	sa.setChip("waiting for GitHub login...", "", nil)
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		fyne.Do(func() { sa.App.OpenURL(parsedURL) })
+	}()
+
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		timeout := time.After(2 * time.Minute)
+
+		for {
+			select {
+			case <-timeout:
+				fyne.Do(func() {
+					sa.setChip("login timed out", "try again", sa.handleLogin)
+				})
+				return
+			case <-ticker.C:
+				err := CompleteGitHubDeviceLogin()
+				if err == nil {
+					fyne.Do(func() { sa.setChip("checking...", "", nil) })
+					sa.startUpdateCheck()
+					return
+				}
+				if err.Error() == "authorization_pending" || err.Error() == "slow_down" {
+					continue
+				}
+				fyne.Do(func() {
+					sa.setChip("login failed", "try again", sa.handleLogin)
+					dialog.ShowError(err, sa.Window)
+				})
+				return
+			}
+		}
+	}()
+}
+
+func (sa *SpriteApp) handleUpdate() {
+	if sa.pendingUpdateInfo == nil {
+		return
+	}
+	sa.setChip("downloading update...", "", nil)
+
+	go func() {
+		err := DownloadUpdate(sa.pendingUpdateInfo)
+		fyne.Do(func() {
+			if err != nil {
+				sa.setChip("download failed", "retry", sa.handleUpdate)
+				dialog.ShowError(err, sa.Window)
+				return
+			}
+			prefix := ""
+			if sa.Username != "" {
+				prefix = "@" + sa.Username + "  ·  "
+			}
+			sa.setChip(prefix+"update ready", "restart to apply", func() { sa.Window.Close() })
+		})
+	}()
+}
+
+func (sa *SpriteApp) checkAndApplyPendingUpdate() {
+	if ApplyPendingUpdate() {
+		dialog.ShowInformation("Update Applied", "The application has been updated. Some features may have changed.", sa.Window)
+	}
 }
 
 func (sa *SpriteApp) buildSlider() {
@@ -182,71 +357,49 @@ func (sa *SpriteApp) buildProcessBox() {
 	sa.ProgressBar.Hide()
 
 	sa.SaveBtn = widget.NewButton("Save & Process!", func() {
-		if !sa.Overlay.HasSelection || sa.Overlay.MinX == sa.Overlay.MaxX || len(sa.Files) == 0 {
-			return
+		fname := OutputFile
+		if len(sa.Files) == 1 {
+			fname = OneShotFile
 		}
-		GlobalSafeZone = SafeZone{
-			MinX:   int(math.Round(float64(sa.Overlay.MinX))),
-			MinY:   int(math.Round(float64(sa.Overlay.MinY))),
-			MaxX:   int(math.Round(float64(sa.Overlay.MaxX))),
-			MaxY:   int(math.Round(float64(sa.Overlay.MaxY))),
-			Active: true,
-		}
-		SaveSafeZoneConfig()
-
-		sa.setProcessingState(true)
-
-		go func() {
-			err := RunBatchProcessing(nil, func(current, total int) {
-				fyne.Do(func() { sa.ProgressBar.SetValue(float64(current) / float64(total)) })
-			})
-
-			fyne.Do(func() {
-				sa.setProcessingState(false)
-				if err != nil {
-					dialog.ShowError(err, sa.Window)
-				} else {
-					fname := OutputFile
-					if len(sa.Files) == 1 {
-						fname = OneShotFile
-					}
-					dialog.ShowInformation("Success", fmt.Sprintf("Heeho! Spritesheet saved as %s (%d frames)!", fname, len(sa.Files)), sa.Window)
-				}
-			})
-		}()
+		msg := fmt.Sprintf("Heeho! Spritesheet saved as %s (%d frames)!", fname, len(sa.Files))
+		sa.processSelection(nil, msg)
 	})
 
 	sa.SaveOneBtn = widget.NewButton("One-shot current frame!", func() {
-		if !sa.Overlay.HasSelection || sa.Overlay.MinX == sa.Overlay.MaxX || len(sa.Files) == 0 {
-			return
-		}
-		GlobalSafeZone = SafeZone{
-			MinX:   int(math.Round(float64(sa.Overlay.MinX))),
-			MinY:   int(math.Round(float64(sa.Overlay.MinY))),
-			MaxX:   int(math.Round(float64(sa.Overlay.MaxX))),
-			MaxY:   int(math.Round(float64(sa.Overlay.MaxY))),
-			Active: true,
-		}
-		SaveSafeZoneConfig()
-
-		sa.setProcessingState(true)
-
-		go func() {
-			singleFile := []string{sa.Files[sa.CurrentImageIndex]}
-			err := RunBatchProcessing(singleFile, func(current, total int) {
-				fyne.Do(func() { sa.ProgressBar.SetValue(float64(current) / float64(total)) })
-			})
-
-			fyne.Do(func() {
-				sa.setProcessingState(false)
-				if err != nil {
-					dialog.ShowError(err, sa.Window)
-				} else {
-					dialog.ShowInformation("Success", fmt.Sprintf("Heeho! One-shot saved as %s!", OneShotFile), sa.Window)
-				}
-			})
-		}()
+		msg := fmt.Sprintf("Heeho! One-shot saved as %s!", OneShotFile)
+		sa.processSelection([]string{sa.Files[sa.CurrentImageIndex]}, msg)
 	})
+}
+
+func (sa *SpriteApp) processSelection(filesToProcess []string, successMsg string) {
+	if !sa.Overlay.HasSelection || sa.Overlay.MinX == sa.Overlay.MaxX || len(sa.Files) == 0 {
+		return
+	}
+
+	GlobalSafeZone = SafeZone{
+		MinX:   int(math.Round(float64(sa.Overlay.MinX))),
+		MinY:   int(math.Round(float64(sa.Overlay.MinY))),
+		MaxX:   int(math.Round(float64(sa.Overlay.MaxX))),
+		MaxY:   int(math.Round(float64(sa.Overlay.MaxY))),
+		Active: true,
+	}
+	SaveSafeZoneConfig()
+	sa.setProcessingState(true)
+
+	go func() {
+		err := RunBatchProcessing(filesToProcess, func(current, total int) {
+			fyne.Do(func() { sa.ProgressBar.SetValue(float64(current) / float64(total)) })
+		})
+
+		fyne.Do(func() {
+			sa.setProcessingState(false)
+			if err != nil {
+				dialog.ShowError(err, sa.Window)
+			} else {
+				dialog.ShowInformation("Success", successMsg, sa.Window)
+			}
+		})
+	}()
 }
 
 func (sa *SpriteApp) setProcessingState(processing bool) {

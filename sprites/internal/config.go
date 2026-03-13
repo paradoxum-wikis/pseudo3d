@@ -92,6 +92,8 @@ func LoadConfiguration() {
 						GlobalSafeZone = SafeZone{MinX: minX, MinY: minY, MaxX: maxX, MaxY: maxY, Active: true}
 					}
 				}
+			} else if key == "gh-token" {
+				GithubToken = val
 			} else if !setFlags[key] && flag.Lookup(key) != nil {
 				flag.Set(key, val)
 			}
