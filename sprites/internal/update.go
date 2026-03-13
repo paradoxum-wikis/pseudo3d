@@ -142,54 +142,55 @@ func DownloadUpdate(info *UpdateInfo) error {
 	return err
 }
 
-func ApplyPendingUpdate() bool {
+func ApplyPendingUpdate() error {
 	archivePath := getUpdatePath()
 	if _, err := os.Stat(archivePath); err != nil {
-		return false
-	}
-	defer os.Remove(archivePath)
-
-	exePath, err := os.Executable()
-	if err != nil {
-		return false
-	}
-	exeDir := filepath.Dir(exePath)
-	backupDir := filepath.Join(exeDir, "archive", "backup")
-
-	os.RemoveAll(backupDir)
-	os.MkdirAll(backupDir, 0755)
-
-	if strings.HasSuffix(archivePath, ".tar.gz") {
-		return applyTarGz(archivePath, exeDir, backupDir) == nil
-	}
-	return applyZip(archivePath, exeDir, backupDir) == nil
-}
-
-func backupFile(srcPath, backupDir string) error {
-	if _, err := os.Stat(srcPath); err != nil {
 		return nil
 	}
-	rel, _ := filepath.Rel(filepath.Dir(backupDir), srcPath)
-	dst := filepath.Join(backupDir, rel)
-	os.MkdirAll(filepath.Dir(dst), 0755)
 
-	src, err := os.Open(srcPath)
-	if err != nil {
-		return err
+	exePath, _ := os.Executable()
+	exeDir := filepath.Dir(exePath)
+
+	exeOld := exePath + ".old"
+	_ = os.Remove(exeOld)
+	if err := os.Rename(exePath, exeOld); err != nil {
+		return fmt.Errorf("could not rename exe: %v", err)
 	}
-	defer src.Close()
 
-	dstf, err := os.Create(dst)
-	if err != nil {
-		return err
+	var err error
+	if strings.HasSuffix(archivePath, ".tar.gz") {
+		err = applyTarGz(archivePath, exeDir)
+	} else {
+		err = applyZip(archivePath, exeDir)
 	}
-	defer dstf.Close()
 
-	_, err = io.Copy(dstf, src)
-	return err
+	if err != nil {
+		_ = os.Rename(exeOld, exePath)
+		return fmt.Errorf("update failed (check if Roblox Studio is open): %v", err)
+	}
+
+	os.Remove(archivePath)
+	return nil
 }
 
-func applyZip(zipPath, exeDir, backupDir string) error {
+func FinalizeAndRestart() error {
+	if err := ApplyPendingUpdate(); err != nil {
+		return err
+	}
+
+	exePath, _ := os.Executable()
+	_, err := os.StartProcess(exePath, os.Args, &os.ProcAttr{
+		Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
+	})
+	if err != nil {
+		return err
+	}
+
+	os.Exit(0)
+	return nil
+}
+
+func applyZip(zipPath, exeDir string) error {
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return err
@@ -208,30 +209,33 @@ func applyZip(zipPath, exeDir, backupDir string) error {
 		}
 		os.MkdirAll(filepath.Dir(outPath), 0755)
 
-		backupFile(outPath, backupDir)
-
-		func() {
+		err = func() error {
 			src, err := file.Open()
 			if err != nil {
-				return
+				return err
 			}
 			defer src.Close()
 
 			dst, err := os.Create(outPath)
 			if err != nil {
-				return
+				return err
 			}
 			defer dst.Close()
 
-			if _, err := io.Copy(dst, src); err == nil && file.Mode()&0111 != 0 {
+			_, err = io.Copy(dst, src)
+			if err == nil && runtime.GOOS != "windows" && file.Mode()&0111 != 0 {
 				os.Chmod(outPath, 0755)
 			}
+			return err
 		}()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func applyTarGz(tarPath, exeDir, backupDir string) error {
+func applyTarGz(tarPath, exeDir string) error {
 	f, err := os.Open(tarPath)
 	if err != nil {
 		return err
@@ -261,19 +265,22 @@ func applyTarGz(tarPath, exeDir, backupDir string) error {
 		}
 		os.MkdirAll(filepath.Dir(outPath), 0755)
 
-		backupFile(outPath, backupDir)
-
-		func() {
+		err = func() error {
 			dst, err := os.Create(outPath)
 			if err != nil {
-				return
+				return err
 			}
 			defer dst.Close()
 
-			if _, err := io.Copy(dst, tr); err == nil && header.FileInfo().Mode()&0111 != 0 {
+			_, err = io.Copy(dst, tr)
+			if err == nil && runtime.GOOS != "windows" && header.FileInfo().Mode()&0111 != 0 {
 				os.Chmod(outPath, 0755)
 			}
+			return err
 		}()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

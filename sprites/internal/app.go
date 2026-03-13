@@ -64,6 +64,9 @@ type SpriteApp struct {
 }
 
 func RunUI() {
+	exePath, _ := os.Executable()
+	os.Remove(exePath + ".old")
+
 	fyneApp := app.New()
 	w := fyneApp.NewWindow("Pseudo3D Sprites")
 	w.Resize(fyne.NewSize(900, 700))
@@ -327,7 +330,7 @@ func (sa *SpriteApp) handleUpdate() {
 }
 
 func (sa *SpriteApp) checkApplyPendingUpdate() {
-	if ApplyPendingUpdate() {
+	if err := ApplyPendingUpdate(); err == nil {
 		exePath, _ := os.Executable()
 		path := filepath.Join(filepath.Dir(exePath), "archive", "changelog.md")
 		if data, err := os.ReadFile(path); err == nil {
