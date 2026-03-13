@@ -8,6 +8,8 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -75,7 +77,7 @@ func RunUI() {
 
 	sa.buildUI()
 	sa.setupShortcuts()
-	sa.checkAndApplyPendingUpdate()
+	sa.checkApplyPendingUpdate()
 	sa.startUpdateCheck()
 
 	initialFiles, _ := GetPNGFiles(InputDir)
@@ -307,24 +309,35 @@ func (sa *SpriteApp) handleUpdate() {
 
 	go func() {
 		err := DownloadUpdate(sa.pendingUpdateInfo)
+		if err == nil {
+			path := filepath.Join("archive", "changelog.md")
+			_ = os.WriteFile(path, []byte(sa.pendingUpdateInfo.Changelog), 0644)
+		}
+
 		fyne.Do(func() {
 			if err != nil {
 				sa.setChip("download failed", "retry", sa.handleUpdate)
 				dialog.ShowError(err, sa.Window)
 				return
 			}
-			prefix := ""
-			if sa.Username != "" {
-				prefix = "@" + sa.Username + "  ·  "
-			}
-			sa.setChip(prefix+"update ready", "restart to apply", func() { sa.Window.Close() })
+			sa.setChip("update ready", "restart to apply", sa.Window.Close)
 		})
 	}()
 }
 
-func (sa *SpriteApp) checkAndApplyPendingUpdate() {
+func (sa *SpriteApp) checkApplyPendingUpdate() {
 	if ApplyPendingUpdate() {
-		dialog.ShowInformation("Update Applied", "The application has been updated. Some features may have changed.", sa.Window)
+		path := filepath.Join("archive", "changelog.md")
+		if data, err := os.ReadFile(path); err == nil {
+			os.Remove(path)
+
+			md := widget.NewRichTextFromMarkdown(string(data))
+			md.Wrapping = fyne.TextWrapWord
+			scroll := container.NewScroll(md)
+			scroll.SetMinSize(fyne.NewSize(500, 400))
+
+			dialog.ShowCustom("Update Applied! Heeho!", "Thanks.", scroll, sa.Window)
+		}
 	}
 }
 
