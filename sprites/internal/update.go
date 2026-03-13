@@ -350,20 +350,16 @@ func apiReq(method, reqURL, token string, form url.Values, out any) error {
 }
 
 func getZipURL(release *githubRelease) string {
-	pattern := "linux-amd64.tar.gz"
-	switch runtime.GOOS {
-	case "windows":
-		pattern = "windows-amd64.zip"
-	case "darwin":
-		pattern = "macos-amd64.zip"
-		if runtime.GOARCH == "arm64" {
-			pattern = "macos-arm64.zip"
-		}
+	names := map[string]string{
+		"linux/amd64":   "pseudo3d-linux-amd64.tar.gz",
+		"windows/amd64": "pseudo3d-windows-amd64.zip",
+		"darwin/amd64":  "pseudo3d-macos-amd64.zip",
+		"darwin/arm64":  "pseudo3d-macos-arm64.zip",
 	}
-
-	for _, asset := range release.Assets {
-		if strings.Contains(asset.Name, pattern) {
-			return asset.BrowserDownloadURL
+	want := names[runtime.GOOS+"/"+runtime.GOARCH]
+	for _, a := range release.Assets {
+		if a.Name == want {
+			return a.BrowserDownloadURL
 		}
 	}
 	return ""
