@@ -310,7 +310,8 @@ func (sa *SpriteApp) handleUpdate() {
 	go func() {
 		err := DownloadUpdate(sa.pendingUpdateInfo)
 		if err == nil {
-			path := filepath.Join("archive", "changelog.md")
+			exePath, _ := os.Executable()
+			path := filepath.Join(filepath.Dir(exePath), "archive", "changelog.md")
 			_ = os.WriteFile(path, []byte(sa.pendingUpdateInfo.Changelog), 0644)
 		}
 
@@ -327,7 +328,8 @@ func (sa *SpriteApp) handleUpdate() {
 
 func (sa *SpriteApp) checkApplyPendingUpdate() {
 	if ApplyPendingUpdate() {
-		path := filepath.Join("archive", "changelog.md")
+		exePath, _ := os.Executable()
+		path := filepath.Join(filepath.Dir(exePath), "archive", "changelog.md")
 		if data, err := os.ReadFile(path); err == nil {
 			os.Remove(path)
 
