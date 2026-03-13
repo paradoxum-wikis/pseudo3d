@@ -105,7 +105,10 @@ func DownloadUpdate(info *UpdateInfo) error {
 	archivePath := getUpdatePath()
 	os.MkdirAll(filepath.Dir(archivePath), 0755)
 
-	resp, err := (&http.Client{Timeout: 5 * time.Minute}).Get(info.DownloadURL)
+	req, _ := http.NewRequest(http.MethodGet, info.DownloadURL, nil)
+	req.Header.Set("Authorization", "Bearer "+loadPreference("updates.token"))
+
+	resp, err := (&http.Client{Timeout: 5 * time.Minute}).Do(req)
 	if err != nil {
 		return err
 	}
@@ -121,11 +124,8 @@ func DownloadUpdate(info *UpdateInfo) error {
 	}
 	defer f.Close()
 
-	if _, err := io.Copy(f, resp.Body); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = io.Copy(f, resp.Body)
+	return err
 }
 
 func ApplyPendingUpdate() bool {
