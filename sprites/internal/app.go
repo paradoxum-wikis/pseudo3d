@@ -807,6 +807,9 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		sizeEntry := widget.NewEntry()
 		sizeEntry.SetText(fmt.Sprintf("%d", TargetSize))
 
+		sizeOneCheck := widget.NewCheck("Respect Output Size for 1F", nil)
+		sizeOneCheck.SetChecked(SizeOne)
+
 		skipUiCheck := widget.NewCheck("Skip UI on Startup", nil)
 		skipUiCheck.SetChecked(ProcessMode)
 
@@ -837,8 +840,9 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		items := []*widget.FormItem{
 			widget.NewFormItem("", skipUiCheck),
 			widget.NewFormItem("Output Size (px)", sizeEntry),
-			widget.NewFormItem("", skipBgCheck),
+			widget.NewFormItem("", sizeOneCheck),
 			widget.NewFormItem("BG Threshold", thresholdEntry),
+			widget.NewFormItem("", skipBgCheck),
 			widget.NewFormItem("Input Directory", inEntry),
 			widget.NewFormItem("Output Filename", outEntry),
 			widget.NewFormItem("1F Output Filename", oneShotEntry),
@@ -862,6 +866,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 				"erode":         strconv.FormatBool(erodeCheck.Checked),
 				"color-bg":      colorEntry.Text,
 				"skip-prescale": strconv.FormatBool(skipPrescaleCheck.Checked),
+				"size-one":      strconv.FormatBool(sizeOneCheck.Checked),
 			}
 			err := UpdateConfig(updates)
 			if err != nil {

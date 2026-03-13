@@ -13,8 +13,9 @@ import (
 var (
 	ProcessMode   bool
 	TargetSize    int
-	SkipBgRemoval bool
+	SizeOne       bool
 	Threshold     float64
+	SkipBgRemoval bool
 	InputDir      string
 	OutputFile    string
 	OneShotFile   string
