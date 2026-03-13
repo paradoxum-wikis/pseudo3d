@@ -229,7 +229,9 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 			}
 			backupName = filepath.Join("archive", fmt.Sprintf("%s-%d.png", base, i))
 		}
-		os.Rename(targetOut, backupName)
+		if err := os.Rename(targetOut, backupName); err != nil {
+			return fmt.Errorf("failed to archive %s: %w", targetOut, err)
+		}
 	}
 
 	out, err := os.Create(targetOut)
