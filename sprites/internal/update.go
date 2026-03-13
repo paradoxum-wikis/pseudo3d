@@ -171,6 +171,7 @@ func ApplyPendingUpdate() (bool, error) {
 
 	if err != nil {
 		_ = os.Rename(exeOld, exePath)
+		os.Remove(archivePath)
 		return false, fmt.Errorf("extraction failed: %v", err)
 	}
 
