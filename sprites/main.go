@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"pseudo3d-sprites/internal"
 )
@@ -28,7 +29,10 @@ func init() {
 func main() {
 	internal.CurrentVersion = version
 	exePath, _ := os.Executable()
-	_ = os.Remove(exePath + ".old")
+	go func() {
+		time.Sleep(2 * time.Second)
+		_ = os.Remove(exePath + ".old")
+	}()
 
 	applied, err := internal.ApplyPendingUpdate()
 	if err != nil {
