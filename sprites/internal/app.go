@@ -847,7 +847,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 			widget.NewFormItem("", skipPrescaleCheck),
 		}
 
-		dialog.ShowForm("Settings", "Save", "Cancel", items, func(b bool) {
+		dialog.ShowForm("Settings ("+CurrentVersion+")", "Save", "Cancel", items, func(b bool) {
 			if !b {
 				return
 			}
