@@ -333,13 +333,16 @@ func apiReq(method, reqURL, token string, form url.Values, out any) error {
 	}
 	defer resp.Body.Close()
 
-	if out != nil {
-		json.NewDecoder(resp.Body).Decode(out)
-	}
-
 	if resp.StatusCode/100 != 2 && resp.StatusCode != http.StatusBadRequest {
 		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
 	}
+
+	if out != nil {
+		if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+			return fmt.Errorf("json decode error: %w", err)
+		}
+	}
+
 	return nil
 }
 
