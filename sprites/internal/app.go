@@ -673,6 +673,7 @@ func (sa *SpriteApp) loadFrames(newFiles []string, progressCallback func(float64
 				)
 			}
 			sa.Overlay.Refresh()
+			sa.updateStatus(true)
 
 			sa.Slider.Max = float64(len(sa.Files) - 1)
 			sa.Slider.SetValue(0)
