@@ -232,7 +232,9 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 	}
 
 	if _, err := os.Stat(targetOut); err == nil {
-		os.MkdirAll("archive", 0755)
+		if _, err := os.Stat("archive"); os.IsNotExist(err) {
+			return fmt.Errorf("archive directory does not exist")
+		}
 		base := strings.TrimSuffix(filepath.Base(targetOut), filepath.Ext(targetOut))
 		backupName := filepath.Join("archive", fmt.Sprintf("%s.png", base))
 		for i := 2; ; i++ {
