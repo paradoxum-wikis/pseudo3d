@@ -15,7 +15,7 @@ var version = "seven"
 
 func init() {
 	flag.BoolVar(&internal.ProcessMode, "skip-ui", false, "Skip UI and directly run batch processing")
-	flag.IntVar(&internal.TargetSize, "size", 512, "Output size of the square frames (for example, 300 for 300x300)")
+	flag.IntVar(&internal.SizeTarget, "size", 512, "Output size of the square frames (for example, 300 for 300x300)")
 	flag.BoolVar(&internal.SizeOne, "size-one", false, "If set, resize one-shot output to the same size as --size")
 	flag.Float64Var(&internal.Threshold, "threshold-bg", 7000.0, "Tolerance threshold for background removal (higher = more aggressive)")
 	flag.BoolVar(&internal.SkipBgRemoval, "skip-bg", false, "Skip chroma key background removal completely")

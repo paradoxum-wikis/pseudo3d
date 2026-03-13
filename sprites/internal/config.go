@@ -12,7 +12,7 @@ import (
 
 var (
 	ProcessMode   bool
-	TargetSize    int
+	SizeTarget    int
 	SizeOne       bool
 	Threshold     float64
 	SkipBgRemoval bool

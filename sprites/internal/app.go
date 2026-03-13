@@ -805,7 +805,7 @@ func (sa *SpriteApp) buildImportBtn() *widget.Button {
 func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 	return widget.NewButton("Settings", func() {
 		sizeEntry := widget.NewEntry()
-		sizeEntry.SetText(fmt.Sprintf("%d", TargetSize))
+		sizeEntry.SetText(fmt.Sprintf("%d", SizeTarget))
 
 		sizeOneCheck := widget.NewCheck("Respect Output Size for 1F", nil)
 		sizeOneCheck.SetChecked(SizeOne)

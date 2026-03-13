@@ -143,13 +143,13 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 		sq := max(w, h)
 
 		if SizeOne {
-			sq = TargetSize
+			sq = SizeTarget
 		}
 
 		sheet = image.NewRGBA(image.Rect(0, 0, sq, sq))
 
 		if SizeOne {
-			resized := imaging.Fit(finalCropped, TargetSize, TargetSize, imaging.Lanczos)
+			resized := imaging.Fit(finalCropped, SizeTarget, SizeTarget, imaging.Lanczos)
 			b := resized.Bounds()
 			dp := image.Pt((sq-b.Dx())/2, (sq-b.Dy())/2)
 			draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
@@ -162,7 +162,7 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 			progressCallback(1, 1)
 		}
 	} else {
-		sheet = image.NewRGBA(image.Rect(0, 0, TargetSize*totalFiles, TargetSize))
+		sheet = image.NewRGBA(image.Rect(0, 0, SizeTarget*totalFiles, SizeTarget))
 		for i, path := range files {
 			img := LoadImage(path)
 			cropped := imaging.Crop(img, image.Rect(
@@ -178,11 +178,11 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 					}
 				}
 			}
-			resized := imaging.Fit(currentImg, TargetSize, TargetSize, imaging.Lanczos)
+			resized := imaging.Fit(currentImg, SizeTarget, SizeTarget, imaging.Lanczos)
 			b := resized.Bounds()
-			dx := (TargetSize - b.Dx()) / 2
-			dy := (TargetSize - b.Dy()) / 2
-			dp := image.Pt(i*TargetSize+dx, dy)
+			dx := (SizeTarget - b.Dx()) / 2
+			dy := (SizeTarget - b.Dy()) / 2
+			dp := image.Pt(i*SizeTarget+dx, dy)
 			draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
 			if progressCallback != nil {
 				progressCallback(i+1, totalFiles)
