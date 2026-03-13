@@ -346,13 +346,6 @@ func apiReq(method, reqURL, token string, form url.Values, out any) error {
 	return nil
 }
 
-func getTempDir() string {
-	if runtime.GOOS == "windows" {
-		return filepath.Join(os.Getenv("LOCALAPPDATA"), "pseudo3d", "updates")
-	}
-	return filepath.Join(os.TempDir(), "pseudo3d-updates")
-}
-
 func getZipURL(release *githubRelease) string {
 	pattern := "linux-amd64.tar.gz"
 	switch runtime.GOOS {
@@ -433,8 +426,8 @@ func savePreference(key, value string) {
 
 func getUpdatePath() string {
 	ext := ".tar.gz"
-	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+	if runtime.GOOS != "linux" {
 		ext = ".zip"
 	}
-	return filepath.Join(getTempDir(), "update"+ext)
+	return filepath.Join(os.TempDir(), "pseudo3d-updates", "update"+ext)
 }
