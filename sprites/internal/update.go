@@ -43,12 +43,14 @@ type UpdateInfo struct {
 	LatestTag   string
 	DownloadURL string
 	Changelog   string
+	AssetID     int64
 }
 
 type githubRelease struct {
 	TagName string `json:"tag_name"`
 	Body    string `json:"body"`
 	Assets  []struct {
+		ID                 int64  `json:"id"`
 		Name               string `json:"name"`
 		BrowserDownloadURL string `json:"browser_download_url"`
 	} `json:"assets"`
@@ -75,7 +77,7 @@ func CheckForUpdates(currentVersion string) (*UpdateInfo, string, error) {
 	_ = apiReq(http.MethodGet, "https://api.github.com/user", token, nil, &user)
 
 	latest := normalizeVersion(release.TagName)
-	downloadURL := getZipURL(&release)
+	downloadURL, assetID := getZipURL(&release)
 
 	if downloadURL == "" {
 		return nil, user.Login, errors.New("no compatible release found")
@@ -86,6 +88,7 @@ func CheckForUpdates(currentVersion string) (*UpdateInfo, string, error) {
 		LatestTag:   latest,
 		DownloadURL: downloadURL,
 		Changelog:   release.Body,
+		AssetID:     assetID,
 	}
 
 	if currentVersion == "seven" {
@@ -98,17 +101,28 @@ func CheckForUpdates(currentVersion string) (*UpdateInfo, string, error) {
 }
 
 func DownloadUpdate(info *UpdateInfo) error {
-	if info == nil || info.DownloadURL == "" {
+	if info == nil || info.AssetID == 0 {
 		return errors.New("invalid update info")
 	}
+
+	apiURL := fmt.Sprintf("https://api.github.com/repos/paradoxum-wikis/pseudo3d/releases/assets/%d", info.AssetID)
 
 	archivePath := getUpdatePath()
 	os.MkdirAll(filepath.Dir(archivePath), 0755)
 
-	req, _ := http.NewRequest(http.MethodGet, info.DownloadURL, nil)
+	req, _ := http.NewRequest(http.MethodGet, apiURL, nil)
 	req.Header.Set("Authorization", "Bearer "+loadPreference("updates.token"))
+	req.Header.Set("Accept", "application/octet-stream")
 
-	resp, err := (&http.Client{Timeout: 5 * time.Minute}).Do(req)
+	client := &http.Client{
+		Timeout: 5 * time.Minute,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			req.Header.Del("Authorization")
+			return nil
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -349,7 +363,7 @@ func apiReq(method, reqURL, token string, form url.Values, out any) error {
 	return nil
 }
 
-func getZipURL(release *githubRelease) string {
+func getZipURL(release *githubRelease) (string, int64) {
 	names := map[string]string{
 		"linux/amd64":   "pseudo3d-linux-amd64.tar.gz",
 		"windows/amd64": "pseudo3d-windows-amd64.zip",
@@ -359,10 +373,10 @@ func getZipURL(release *githubRelease) string {
 	want := names[runtime.GOOS+"/"+runtime.GOARCH]
 	for _, a := range release.Assets {
 		if a.Name == want {
-			return a.BrowserDownloadURL
+			return a.BrowserDownloadURL, a.ID
 		}
 	}
-	return ""
+	return "", 0
 }
 
 func compareVersions(a, b string) int {
