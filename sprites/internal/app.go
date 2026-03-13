@@ -69,7 +69,7 @@ var StartupUpdateError error
 func RunUI() {
 	fyneApp := app.New()
 	w := fyneApp.NewWindow("Pseudo3D Sprites")
-	w.Resize(fyne.NewSize(900, 700))
+	w.Resize(fyne.NewSize(1024, 576))
 
 	sa := &SpriteApp{
 		App:        fyneApp,
