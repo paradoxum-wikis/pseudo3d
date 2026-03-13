@@ -90,7 +90,7 @@ func RunUI() {
 
 	initialFiles, _ := GetPNGFiles(InputDir)
 	if len(initialFiles) > 0 {
-		sa.loadFrames(initialFiles, nil)
+		go sa.loadFrames(initialFiles, nil)
 	}
 
 	w.ShowAndRun()
