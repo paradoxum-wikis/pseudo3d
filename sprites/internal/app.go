@@ -886,38 +886,45 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 			widget.NewFormItem("", skipPrescaleCheck),
 		}
 
-		dialog.ShowForm("Settings ("+CurrentVersion+")", "Save", "Cancel", items, func(b bool) {
-			if !b {
-				return
-			}
-			updates := map[string]string{
-				"skip-ui":          strconv.FormatBool(skipUiCheck.Checked),
-				"size":             sizeEntry.Text,
-				"size-one":         strconv.FormatBool(sizeOneCheck.Checked),
-				"mode-bg":          bgModeRadio.Selected,
-				"threshold-bg":     fmt.Sprintf("%.0f", threshSlider.Value),
-				"threshold-bg-min": fmt.Sprintf("%.0f", threshMinSlider.Value),
-				"skip-bg":          strconv.FormatBool(skipBgCheck.Checked),
-				"in":               inEntry.Text,
-				"out":              outEntry.Text,
-				"out-one":          oneShotEntry.Text,
-				"erode":            strconv.FormatBool(erodeCheck.Checked),
-				"color-bg":         colorEntry.Text,
-				"skip-prescale":    strconv.FormatBool(skipPrescaleCheck.Checked),
-			}
-			err := UpdateConfig(updates)
-			if err != nil {
-				dialog.ShowError(err, sa.Window)
-			} else {
-				var parseErr error
-				ChromaKey, parseErr = ParseHexColor(HexColor)
-				if parseErr == nil && sa.ColorPreview != nil {
-					sa.ColorPreview.FillColor = ChromaKey
-					sa.ColorPreview.Refresh()
+		settingsDialog := dialog.NewCustomConfirm("Settings ("+CurrentVersion+")", "Save", "Cancel",
+			container.NewVScroll(widget.NewForm(items...)),
+			func(b bool) {
+				if !b {
+					return
 				}
-				dialog.ShowInformation("Settings", "Settings saved!", sa.Window)
-			}
-		}, sa.Window)
+				updates := map[string]string{
+					"skip-ui":          strconv.FormatBool(skipUiCheck.Checked),
+					"size":             sizeEntry.Text,
+					"size-one":         strconv.FormatBool(sizeOneCheck.Checked),
+					"mode-bg":          bgModeRadio.Selected,
+					"threshold-bg":     fmt.Sprintf("%.0f", threshSlider.Value),
+					"threshold-bg-min": fmt.Sprintf("%.0f", threshMinSlider.Value),
+					"skip-bg":          strconv.FormatBool(skipBgCheck.Checked),
+					"in":               inEntry.Text,
+					"out":              outEntry.Text,
+					"out-one":          oneShotEntry.Text,
+					"erode":            strconv.FormatBool(erodeCheck.Checked),
+					"color-bg":         colorEntry.Text,
+					"skip-prescale":    strconv.FormatBool(skipPrescaleCheck.Checked),
+				}
+				err := UpdateConfig(updates)
+				if err != nil {
+					dialog.ShowError(err, sa.Window)
+				} else {
+					var parseErr error
+					ChromaKey, parseErr = ParseHexColor(HexColor)
+					if parseErr == nil && sa.ColorPreview != nil {
+						sa.ColorPreview.FillColor = ChromaKey
+						sa.ColorPreview.Refresh()
+					}
+					dialog.ShowInformation("Settings", "Settings saved!", sa.Window)
+				}
+			},
+			sa.Window,
+		)
+
+		settingsDialog.Resize(fyne.NewSize(450, 625))
+		settingsDialog.Show()
 	})
 }
 
