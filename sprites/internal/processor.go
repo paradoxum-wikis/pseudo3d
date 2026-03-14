@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/disintegration/imaging"
 	"github.com/t7ru/chromakey/v2"
@@ -167,16 +168,64 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 			draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(fb.Size())}, finalCropped, fb.Min, draw.Src)
 		}
 	} else {
-		sheet = image.NewRGBA(image.Rect(0, 0, SizeTarget*totalFiles, SizeTarget))
+		frames := make([]image.Image, totalFiles)
+
+		globalMinX, globalMinY := math.MaxInt32, math.MaxInt32
+		globalMaxX, globalMaxY := math.MinInt32, math.MinInt32
+		foundOpaque := false
+
+		var wg sync.WaitGroup
+		var mu sync.Mutex
+		var procErr error
+
 		for i, path := range files {
-			finalCropped, err := processImage(path, false)
-			if err != nil {
-				return err
-			}
-			resized := imaging.Fit(finalCropped, SizeTarget, SizeTarget, imaging.Lanczos)
+			wg.Add(1)
+			go func(index int, p string) {
+				defer wg.Done()
+
+				frame, err := processImage(p, false)
+				if err != nil {
+					mu.Lock()
+					if procErr == nil {
+						procErr = err
+					}
+					mu.Unlock()
+					return
+				}
+
+				b := getOpaqueBounds(frame)
+
+				mu.Lock()
+				frames[index] = frame
+				if !b.Empty() {
+					foundOpaque = true
+					globalMinX = min(globalMinX, b.Min.X)
+					globalMinY = min(globalMinY, b.Min.Y)
+					globalMaxX = max(globalMaxX, b.Max.X)
+					globalMaxY = max(globalMaxY, b.Max.Y)
+				}
+				mu.Unlock()
+			}(i, path)
+		}
+
+		wg.Wait()
+		if procErr != nil {
+			return procErr
+		}
+
+		globalBounds := frames[0].Bounds()
+		if foundOpaque {
+			globalBounds = image.Rect(globalMinX, globalMinY, globalMaxX, globalMaxY)
+		}
+
+		sheet = image.NewRGBA(image.Rect(0, 0, SizeTarget*totalFiles, SizeTarget))
+		for i, frame := range frames {
+			resized := imaging.Fit(imaging.Crop(frame, globalBounds), SizeTarget, SizeTarget, imaging.Lanczos)
 			b := resized.Bounds()
+
 			dp := image.Pt(i*SizeTarget+(SizeTarget-b.Dx())/2, (SizeTarget-b.Dy())/2)
 			draw.Draw(sheet, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, resized, b.Min, draw.Src)
+
 			if progressCallback != nil {
 				progressCallback(i+1, totalFiles)
 			}
