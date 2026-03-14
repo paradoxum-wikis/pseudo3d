@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -834,9 +835,14 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		skipPrescaleCheck := widget.NewCheck("Skip Prescale (Full Res Preview)", nil)
 		skipPrescaleCheck.SetChecked(SkipPrescale)
 
-		bgModeRadio := widget.NewRadioGroup([]string{"hard", "range"}, nil)
+		bgModeRadio := widget.NewRadioGroup([]string{"Hard", "Range"}, nil)
 		bgModeRadio.Horizontal = true
-		bgModeRadio.SetSelected(ModeBg)
+
+		if ModeBg == "range" {
+			bgModeRadio.SetSelected("Range")
+		} else {
+			bgModeRadio.SetSelected("Hard")
+		}
 
 		threshLabel := widget.NewLabel(fmt.Sprintf("%.0f", Threshold))
 		threshSlider := widget.NewSlider(0, 60000)
@@ -863,7 +869,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		}
 
 		bgModeRadio.OnChanged = func(mode string) {
-			if mode == "range" {
+			if mode == "Range" {
 				threshMinRow.Show()
 			} else {
 				threshMinRow.Hide()
@@ -896,7 +902,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 					"skip-ui":          strconv.FormatBool(skipUiCheck.Checked),
 					"size":             sizeEntry.Text,
 					"size-one":         strconv.FormatBool(sizeOneCheck.Checked),
-					"mode-bg":          bgModeRadio.Selected,
+					"mode-bg":          strings.ToLower(bgModeRadio.Selected),
 					"threshold-bg":     fmt.Sprintf("%.0f", threshSlider.Value),
 					"threshold-bg-min": fmt.Sprintf("%.0f", threshMinSlider.Value),
 					"skip-bg":          strconv.FormatBool(skipBgCheck.Checked),
