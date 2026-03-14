@@ -26,7 +26,7 @@ func init() {
 	flag.StringVar(&internal.OneShotFile, "out-one", "oneshot.png", "Output filename for single frame exports")
 	flag.BoolVar(&internal.ErodeEdges, "erode", false, "Aggressively trim 1 pixel of alpha from edges to kill residue")
 	flag.StringVar(&internal.HexColor, "color-bg", "DF03DF", "Hex color code to remove as background")
-	flag.BoolVar(&internal.SkipPrescale, "skip-prescale", false, "Prescale preview images to "+fmt.Sprintf("%d", internal.PreviewMaxPx)+"px max for faster UI (originals are still used for processing)")
+	flag.BoolVar(&internal.SkipPrescale, "skip-prescale", false, "Skip prescale preview images to "+fmt.Sprintf("%d", internal.PreviewMaxPx)+"px max for at the cost of a slower UI (originals are still used for processing)")
 }
 
 func main() {
