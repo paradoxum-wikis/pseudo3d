@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	fyne.io/fyne/v2 v2.7.3
 	github.com/disintegration/imaging v1.6.2
-	github.com/t7ru/chromakey v1.0.1
+	github.com/t7ru/chromakey/v2 v2.0.0
 )
 
 require (

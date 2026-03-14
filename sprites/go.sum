@@ -65,8 +65,8 @@ github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef h1:Ch6Q+AZUxDBCVqd
 github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef/go.mod h1:nXTWP6+gD5+LUJ8krVhhoeHjvHTutPxMYl5SvkcnJNE=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/t7ru/chromakey v1.0.1 h1:pgrtucQ2ECetA8Q4hCgIIXvojnT9MbGE0nkMGtJjBI0=
-github.com/t7ru/chromakey v1.0.1/go.mod h1:Jdvr+jCJIVN+gTd0TOJUPt5VINFooJ71zCAG2WA1bPU=
+github.com/t7ru/chromakey/v2 v2.0.0 h1:ZzYO1icMWKSajj4V+GNlgpI0c69QJhYXZYGTVEiYwGo=
+github.com/t7ru/chromakey/v2 v2.0.0/go.mod h1:DlBOxcJtuqtEM4yE9HXPWrqD9Sv1+NzmlagDyPGUP6A=
 github.com/yuin/goldmark v1.7.8 h1:iERMLn0/QJeHFhxSt3p6PeN9mGnvIKSpG9YYorDMnic=
 github.com/yuin/goldmark v1.7.8/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
 golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=

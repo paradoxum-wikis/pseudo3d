@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/disintegration/imaging"
-	"github.com/t7ru/chromakey"
+	"github.com/t7ru/chromakey/v2"
 )
 
 func getOpaqueBounds(img image.Image) image.Rectangle {
