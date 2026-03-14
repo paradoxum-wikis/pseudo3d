@@ -487,6 +487,9 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		skipBgCheck := widget.NewCheck("Skip Background Removal", nil)
 		skipBgCheck.SetChecked(SkipBgRemoval)
 
+		skipAutocropCheck := widget.NewCheck("Skip Autocrop", nil)
+		skipAutocropCheck.SetChecked(SkipAutocrop)
+
 		inEntry := widget.NewEntry()
 		inEntry.SetText(InputDir)
 
@@ -548,6 +551,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 
 		bgTab := container.NewVBox(
 			skipBgCheck,
+			skipAutocropCheck,
 			erodeCheck,
 			widget.NewForm(
 				widget.NewFormItem("BG Removal Mode", bgModeRadio),
@@ -592,6 +596,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 					"threshold-bg":     fmt.Sprintf("%.0f", threshSlider.Value),
 					"threshold-bg-min": fmt.Sprintf("%.0f", threshMinSlider.Value),
 					"skip-bg":          strconv.FormatBool(skipBgCheck.Checked),
+					"skip-autocrop":    strconv.FormatBool(skipAutocropCheck.Checked),
 					"in":               inEntry.Text,
 					"out":              outEntry.Text,
 					"out-one":          oneShotEntry.Text,

@@ -92,6 +92,7 @@ Here is a full list of available flags:
 | `-out-one` | `oneshot.png` | Output filename for single frame exports. |
 | `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
 | `-color-bg` | `DF03DF` | Hex color to remove as the background; should match `BACKDROP_COLOR` in your "pseudo3d-maker" `LocalScript`. |
+| `-skip-autocrop` | `false` | Skip tight autocropping of frames and spritesheets. |
 | `-skip-prescale` | `false` | Skip prescale preview images at the cost of slower UI performance; the original files are still used for processing. |
 
 *You can also access the above list by running the executable with the `-help` (`-h`) flag.*

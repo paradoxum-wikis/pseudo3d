@@ -18,6 +18,7 @@ var (
 	SizeOne       bool
 	Threshold     float64
 	SkipBgRemoval bool
+	SkipAutocrop  bool
 	InputDir      string
 	OutputFile    string
 	OneShotFile   string

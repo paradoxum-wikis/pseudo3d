@@ -147,7 +147,7 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 	var sheet *image.RGBA
 
 	if totalFiles == 1 {
-		finalCropped, err := processImage(files[0], true)
+		finalCropped, err := processImage(files[0], !SkipAutocrop)
 		if err != nil {
 			return err
 		}
@@ -183,7 +183,7 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 			go func(index int, p string) {
 				defer wg.Done()
 
-				frame, err := processImage(p, false)
+				frame, err := processImage(p, !SkipAutocrop)
 				if err != nil {
 					mu.Lock()
 					if procErr == nil {
@@ -193,16 +193,21 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 					return
 				}
 
-				b := getOpaqueBounds(frame)
+				var b image.Rectangle
+				if !SkipAutocrop {
+					b = getOpaqueBounds(frame)
+				}
 
 				mu.Lock()
 				frames[index] = frame
-				if !b.Empty() {
-					foundOpaque = true
-					globalMinX = min(globalMinX, b.Min.X)
-					globalMinY = min(globalMinY, b.Min.Y)
-					globalMaxX = max(globalMaxX, b.Max.X)
-					globalMaxY = max(globalMaxY, b.Max.Y)
+				if !SkipAutocrop {
+					if !b.Empty() {
+						foundOpaque = true
+						globalMinX = min(globalMinX, b.Min.X)
+						globalMinY = min(globalMinY, b.Min.Y)
+						globalMaxX = max(globalMaxX, b.Max.X)
+						globalMaxY = max(globalMaxY, b.Max.Y)
+					}
 				}
 				mu.Unlock()
 			}(i, path)

@@ -27,6 +27,7 @@ func init() {
 	flag.BoolVar(&internal.ErodeEdges, "erode", false, "Aggressively trim 1 pixel of alpha from edges to kill residue")
 	flag.StringVar(&internal.HexColor, "color-bg", "DF03DF", "Hex color code to remove as background")
 	flag.BoolVar(&internal.SkipPrescale, "skip-prescale", false, "Skip prescale preview images to "+fmt.Sprintf("%d", internal.PreviewMaxPx)+"px max for at the cost of a slower UI (originals are still used for processing)")
+	flag.BoolVar(&internal.SkipAutocrop, "skip-autocrop", false, "Skip automatic tight cropping for both one-shot and spritesheets")
 }
 
 func main() {
