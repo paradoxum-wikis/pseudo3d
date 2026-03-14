@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/hex"
 	"fmt"
 	"image"
 	"image/color"
@@ -178,10 +179,10 @@ func ParseHexColor(s string) (color.RGBA, error) {
 	if len(s) != 6 {
 		return color.RGBA{}, fmt.Errorf("invalid hex color length: %s", s)
 	}
-	var r, g, b uint8
-	_, err := fmt.Sscanf(s, "%02x%02x%02x", &r, &g, &b)
+
+	b, err := hex.DecodeString(s)
 	if err != nil {
 		return color.RGBA{}, err
 	}
-	return color.RGBA{R: r, G: g, B: b, A: 255}, nil
+	return color.RGBA{R: b[0], G: b[1], B: b[2], A: 255}, nil
 }
