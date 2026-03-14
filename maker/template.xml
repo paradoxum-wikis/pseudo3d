@@ -313,6 +313,24 @@ gcLgc4RKxr21zq2UlJSM]]></BinaryString>
 				<UniqueId name="UniqueId">528ea4a3c1ad757109c14922000003a2</UniqueId>
 			</Properties>
 		</Item>
+		<Item class="ModuleScript" referent="RBXFC2CC950F712451CAE46C7ED6A34F056">
+			<Properties>
+				<Content name="LinkedSource"><null /></Content>
+				<ProtectedString
+					name="Source"
+				><![CDATA[-- Anything inside Maker will be deleted on auto updates!
+-- If possible, do NOT store and save anything important here!]]></ProtectedString>
+				<string name="ScriptGuid">{F3CD0435-59A1-4D46-A041-F762978A88C6}</string>
+				<BinaryString name="AttributesSerialize" />
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">PLEASEOPENME</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags" />
+				<UniqueId name="UniqueId">0837d4ef2ef4591009c678b3000007d6</UniqueId>
+			</Properties>
+		</Item>
 	</Item>
 	<Item class="TimerService" referent="RBX87CB3DC508434A88AD03B14F4B4E12ED">
 		<Properties>
