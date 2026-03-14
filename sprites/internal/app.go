@@ -939,7 +939,6 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 						sa.ColorPreview.FillColor = ChromaKey
 						sa.ColorPreview.Refresh()
 					}
-					dialog.ShowInformation("Settings", "Settings saved!", sa.Window)
 				}
 			},
 			sa.Window,
