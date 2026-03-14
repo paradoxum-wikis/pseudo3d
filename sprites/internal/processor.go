@@ -96,7 +96,11 @@ func processImage(path string) (image.Image, error) {
 
 	var current image.Image = cropped
 	if !SkipBgRemoval {
-		current = chromakey.Remove(current, ChromaKey, Threshold)
+		if ModeBg == "range" {
+			current = chromakey.RemoveRange(current, ChromaKey, ThresholdMin, Threshold)
+		} else {
+			current = chromakey.Remove(current, ChromaKey, Threshold)
+		}
 		if ErodeEdges {
 			if rgba, ok := current.(*image.RGBA); ok {
 				current = chromakey.Erode(rgba)

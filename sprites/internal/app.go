@@ -816,9 +816,6 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		skipBgCheck := widget.NewCheck("Skip Background Removal", nil)
 		skipBgCheck.SetChecked(SkipBgRemoval)
 
-		thresholdEntry := widget.NewEntry()
-		thresholdEntry.SetText(fmt.Sprintf("%.1f", Threshold))
-
 		inEntry := widget.NewEntry()
 		inEntry.SetText(InputDir)
 
@@ -837,11 +834,49 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		skipPrescaleCheck := widget.NewCheck("Skip Prescale (Full Res Preview)", nil)
 		skipPrescaleCheck.SetChecked(SkipPrescale)
 
+		bgModeRadio := widget.NewRadioGroup([]string{"hard", "range"}, nil)
+		bgModeRadio.Horizontal = true
+		bgModeRadio.SetSelected(ModeBg)
+
+		threshLabel := widget.NewLabel(fmt.Sprintf("%.0f", Threshold))
+		threshSlider := widget.NewSlider(0, 60000)
+		threshSlider.Step = 100
+		threshSlider.SetValue(Threshold)
+		threshSlider.OnChanged = func(v float64) {
+			threshLabel.SetText(fmt.Sprintf("%.0f", v))
+		}
+		threshRow := container.NewBorder(nil, nil, nil, threshLabel, threshSlider)
+
+		threshMinLabel := widget.NewLabel(fmt.Sprintf("%.0f", ThresholdMin))
+		threshMinSlider := widget.NewSlider(0, 60000)
+		threshMinSlider.Step = 100
+		threshMinSlider.SetValue(ThresholdMin)
+		threshMinSlider.OnChanged = func(v float64) {
+			threshMinLabel.SetText(fmt.Sprintf("%.0f", v))
+		}
+		threshMinRow := container.NewBorder(nil, nil, nil, threshMinLabel, threshMinSlider)
+
+		threshMinFormItem := widget.NewFormItem("Min BG Threshold", threshMinRow)
+
+		if ModeBg != "range" {
+			threshMinRow.Hide()
+		}
+
+		bgModeRadio.OnChanged = func(mode string) {
+			if mode == "range" {
+				threshMinRow.Show()
+			} else {
+				threshMinRow.Hide()
+			}
+		}
+
 		items := []*widget.FormItem{
 			widget.NewFormItem("", skipUiCheck),
 			widget.NewFormItem("Output Size (px)", sizeEntry),
 			widget.NewFormItem("", sizeOneCheck),
-			widget.NewFormItem("BG Threshold", thresholdEntry),
+			widget.NewFormItem("BG Removal Mode", bgModeRadio),
+			widget.NewFormItem("Max BG Threshold", threshRow),
+			threshMinFormItem,
 			widget.NewFormItem("", skipBgCheck),
 			widget.NewFormItem("Input Directory", inEntry),
 			widget.NewFormItem("Output Filename", outEntry),
@@ -856,17 +891,19 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 				return
 			}
 			updates := map[string]string{
-				"skip-ui":       strconv.FormatBool(skipUiCheck.Checked),
-				"size":          sizeEntry.Text,
-				"skip-bg":       strconv.FormatBool(skipBgCheck.Checked),
-				"threshold-bg":  thresholdEntry.Text,
-				"in":            inEntry.Text,
-				"out":           outEntry.Text,
-				"out-one":       oneShotEntry.Text,
-				"erode":         strconv.FormatBool(erodeCheck.Checked),
-				"color-bg":      colorEntry.Text,
-				"skip-prescale": strconv.FormatBool(skipPrescaleCheck.Checked),
-				"size-one":      strconv.FormatBool(sizeOneCheck.Checked),
+				"skip-ui":          strconv.FormatBool(skipUiCheck.Checked),
+				"size":             sizeEntry.Text,
+				"size-one":         strconv.FormatBool(sizeOneCheck.Checked),
+				"mode-bg":          bgModeRadio.Selected,
+				"threshold-bg":     fmt.Sprintf("%.0f", threshSlider.Value),
+				"threshold-bg-min": fmt.Sprintf("%.0f", threshMinSlider.Value),
+				"skip-bg":          strconv.FormatBool(skipBgCheck.Checked),
+				"in":               inEntry.Text,
+				"out":              outEntry.Text,
+				"out-one":          oneShotEntry.Text,
+				"erode":            strconv.FormatBool(erodeCheck.Checked),
+				"color-bg":         colorEntry.Text,
+				"skip-prescale":    strconv.FormatBool(skipPrescaleCheck.Checked),
 			}
 			err := UpdateConfig(updates)
 			if err != nil {

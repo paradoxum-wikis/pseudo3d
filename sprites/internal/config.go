@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"image/color"
 	"os"
+	"strconv"
 	"strings"
 )
 
 var (
 	ProcessMode   bool
 	SizeTarget    int
+	ModeBg        string
+	ThresholdMin  float64
 	SizeOne       bool
 	Threshold     float64
 	SkipBgRemoval bool
@@ -95,6 +98,12 @@ func LoadConfiguration() {
 				}
 			} else if key == "gh-token" {
 				GithubToken = val
+			} else if key == "mode-bg" {
+				ModeBg = val
+			} else if key == "threshold-bg-min" {
+				if v, err := strconv.ParseFloat(val, 64); err == nil {
+					ThresholdMin = v
+				}
 			} else if !setFlags[key] && flag.Lookup(key) != nil {
 				flag.Set(key, val)
 			}
