@@ -558,13 +558,13 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		)
 
 		fileTab := container.NewVBox(
-			sizeOneCheck,
 			widget.NewForm(
 				widget.NewFormItem("Input Directory", inEntry),
 				widget.NewFormItem("Output Filename", outEntry),
 				widget.NewFormItem("1F Output Filename", oneShotEntry),
 				widget.NewFormItem("Output Size (px)", sizeEntry),
 			),
+			sizeOneCheck,
 		)
 
 		appTab := container.NewVBox(
