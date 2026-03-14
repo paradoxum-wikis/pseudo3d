@@ -876,24 +876,40 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 			}
 		}
 
-		items := []*widget.FormItem{
-			widget.NewFormItem("", skipUiCheck),
-			widget.NewFormItem("Output Size (px)", sizeEntry),
-			widget.NewFormItem("", sizeOneCheck),
-			widget.NewFormItem("BG Removal Mode", bgModeRadio),
-			widget.NewFormItem("Max BG Threshold", threshRow),
-			threshMinFormItem,
-			widget.NewFormItem("", skipBgCheck),
-			widget.NewFormItem("Input Directory", inEntry),
-			widget.NewFormItem("Output Filename", outEntry),
-			widget.NewFormItem("1F Output Filename", oneShotEntry),
-			widget.NewFormItem("", erodeCheck),
-			widget.NewFormItem("Chroma Key Color", colorEntry),
-			widget.NewFormItem("", skipPrescaleCheck),
-		}
+		bgTab := container.NewVBox(
+			skipBgCheck,
+			erodeCheck,
+			widget.NewForm(
+				widget.NewFormItem("BG Removal Mode", bgModeRadio),
+				widget.NewFormItem("Max BG Threshold", threshRow),
+				threshMinFormItem,
+				widget.NewFormItem("Chroma Key Color", colorEntry),
+			),
+		)
+
+		fileTab := container.NewVBox(
+			sizeOneCheck,
+			widget.NewForm(
+				widget.NewFormItem("Input Directory", inEntry),
+				widget.NewFormItem("Output Filename", outEntry),
+				widget.NewFormItem("1F Output Filename", oneShotEntry),
+				widget.NewFormItem("Output Size (px)", sizeEntry),
+			),
+		)
+
+		appTab := container.NewVBox(
+			skipUiCheck,
+			skipPrescaleCheck,
+		)
+
+		tabs := container.NewAppTabs(
+			container.NewTabItem("Process", container.NewPadded(bgTab)),
+			container.NewTabItem("Output", container.NewPadded(fileTab)),
+			container.NewTabItem("Advanced", container.NewPadded(appTab)),
+		)
 
 		settingsDialog := dialog.NewCustomConfirm("Settings ("+CurrentVersion+")", "Save", "Cancel",
-			container.NewVScroll(widget.NewForm(items...)),
+			tabs,
 			func(b bool) {
 				if !b {
 					return
@@ -929,7 +945,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 			sa.Window,
 		)
 
-		settingsDialog.Resize(fyne.NewSize(450, 625))
+		settingsDialog.Resize(fyne.NewSize(450, 500))
 		settingsDialog.Show()
 	})
 }
