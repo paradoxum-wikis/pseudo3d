@@ -505,7 +505,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		colorEntry := widget.NewEntry()
 		colorEntry.SetText(HexColor)
 
-		skipPrescaleCheck := widget.NewCheck("Skip Prescale (Full Res Preview)", nil)
+		skipPrescaleCheck := widget.NewCheck("Skip Prescale (Full Resolution Preview)", nil)
 		skipPrescaleCheck.SetChecked(SkipPrescale)
 
 		bgModeRadio := widget.NewRadioGroup([]string{"Hard", "Range"}, nil)
