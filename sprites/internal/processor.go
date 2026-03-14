@@ -83,7 +83,7 @@ func getOpaqueBounds(img image.Image) image.Rectangle {
 	return image.Rect(minX, minY, maxX+1, maxY+1)
 }
 
-func processImage(path string) (image.Image, error) {
+func processImage(path string, tightCrop bool) (image.Image, error) {
 	img := LoadImage(path)
 	if img == nil {
 		return nil, fmt.Errorf("failed to load %s", path)
@@ -108,12 +108,14 @@ func processImage(path string) (image.Image, error) {
 		}
 	}
 
-	tight := getOpaqueBounds(current)
-	if tight.Empty() {
-		tight = current.Bounds()
+	if tightCrop {
+		tight := getOpaqueBounds(current)
+		if !tight.Empty() {
+			current = imaging.Crop(current, tight)
+		}
 	}
 
-	return imaging.Crop(current, tight), nil
+	return current, nil
 }
 
 func RunBatchProcessing(files []string, progressCallback func(current, total int)) error {
@@ -144,7 +146,7 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 	var sheet *image.RGBA
 
 	if totalFiles == 1 {
-		finalCropped, err := processImage(files[0])
+		finalCropped, err := processImage(files[0], true)
 		if err != nil {
 			return err
 		}
@@ -167,7 +169,7 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 	} else {
 		sheet = image.NewRGBA(image.Rect(0, 0, SizeTarget*totalFiles, SizeTarget))
 		for i, path := range files {
-			finalCropped, err := processImage(path)
+			finalCropped, err := processImage(path, false)
 			if err != nil {
 				return err
 			}
