@@ -128,8 +128,7 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 
 	if len(files) == 0 {
 		var err error
-		files, err = GetPNGFiles(InputDir)
-		if err != nil {
+		if files, err = GetPNGFiles(InputDir); err != nil {
 			return err
 		}
 	}
@@ -158,6 +157,7 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 			sq = SizeTarget
 		}
 		sheet = image.NewRGBA(image.Rect(0, 0, sq, sq))
+
 		if SizeOne {
 			resized := imaging.Fit(finalCropped, SizeTarget, SizeTarget, imaging.Lanczos)
 			b := resized.Bounds()
@@ -169,9 +169,7 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 		}
 	} else {
 		frames := make([]image.Image, totalFiles)
-
-		globalMinX, globalMinY := math.MaxInt32, math.MaxInt32
-		globalMaxX, globalMaxY := math.MinInt32, math.MinInt32
+		globalMinX, globalMinY, globalMaxX, globalMaxY := math.MaxInt32, math.MaxInt32, math.MinInt32, math.MinInt32
 		foundOpaque := false
 
 		var wg sync.WaitGroup
@@ -180,10 +178,10 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 
 		for i, path := range files {
 			wg.Add(1)
-			go func(index int, p string) {
+			go func() {
 				defer wg.Done()
 
-				frame, err := processImage(p, !SkipAutocrop)
+				frame, err := processImage(path, false)
 				if err != nil {
 					mu.Lock()
 					if procErr == nil {
@@ -199,18 +197,14 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 				}
 
 				mu.Lock()
-				frames[index] = frame
-				if !SkipAutocrop {
-					if !b.Empty() {
-						foundOpaque = true
-						globalMinX = min(globalMinX, b.Min.X)
-						globalMinY = min(globalMinY, b.Min.Y)
-						globalMaxX = max(globalMaxX, b.Max.X)
-						globalMaxY = max(globalMaxY, b.Max.Y)
-					}
+				frames[i] = frame
+				if !SkipAutocrop && !b.Empty() {
+					foundOpaque = true
+					globalMinX, globalMinY = min(globalMinX, b.Min.X), min(globalMinY, b.Min.Y)
+					globalMaxX, globalMaxY = max(globalMaxX, b.Max.X), max(globalMaxY, b.Max.Y)
 				}
 				mu.Unlock()
-			}(i, path)
+			}()
 		}
 
 		wg.Wait()
