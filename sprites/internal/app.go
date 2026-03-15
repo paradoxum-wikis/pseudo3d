@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/draw"
 	"math"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -345,15 +346,64 @@ func (sa *SpriteApp) renderPreview() {
 	scX, scY := float64(pb.Dx())/float64(nat.X), float64(pb.Dy())/float64(nat.Y)
 	cropRect := image.Rect(int(float64(minX)*scX), int(float64(minY)*scY), int(float64(maxX)*scX), int(float64(maxY)*scY))
 
-	processed := applyPreviewProcessing(imaging.Crop(sa.PreviewImages[sa.CurrentImageIndex], cropRect))
+	processedCurrent := applyPreviewProcessing(imaging.Crop(sa.PreviewImages[sa.CurrentImageIndex], cropRect))
+	finalImage := processedCurrent
+
+	if !SkipAutocrop {
+		gMinX, gMinY, gMaxX, gMaxY := math.MaxInt32, math.MaxInt32, math.MinInt32, math.MinInt32
+		found := false
+
+		if len(sa.PreviewImages) > 1 {
+			var wg sync.WaitGroup
+			var mu sync.Mutex
+
+			for _, img := range sa.PreviewImages {
+				wg.Add(1)
+				go func(frame image.Image) {
+					defer wg.Done()
+					b := getOpaqueBounds(applyPreviewProcessing(imaging.Crop(frame, cropRect)))
+					if !b.Empty() {
+						mu.Lock()
+						found = true
+						gMinX, gMinY = min(gMinX, b.Min.X), min(gMinY, b.Min.Y)
+						gMaxX, gMaxY = max(gMaxX, b.Max.X), max(gMaxY, b.Max.Y)
+						mu.Unlock()
+					}
+				}(img)
+			}
+			wg.Wait()
+		} else {
+			if b := getOpaqueBounds(processedCurrent); !b.Empty() {
+				found = true
+				gMinX, gMinY, gMaxX, gMaxY = b.Min.X, b.Min.Y, b.Max.X, b.Max.Y
+			}
+		}
+
+		if found {
+			finalImage = imaging.Crop(processedCurrent, image.Rect(gMinX, gMinY, gMaxX, gMaxY))
+		}
+	}
+
+	b := finalImage.Bounds()
+	sq := max(b.Dx(), b.Dy())
+	if sq == 0 {
+		sq = 1
+	}
+	squareImg := image.NewRGBA(image.Rect(0, 0, sq, sq))
+	dpSq := image.Pt((sq-b.Dx())/2, (sq-b.Dy())/2)
+	draw.Draw(squareImg, image.Rectangle{Min: dpSq, Max: dpSq.Add(b.Size())}, finalImage, b.Min, draw.Src)
 
 	fit := func(c *image.RGBA) image.Image {
 		w, h := c.Rect.Dx(), c.Rect.Dy()
-		scaled := imaging.Resize(processed, w, 0, imaging.NearestNeighbor)
-		out, b := image.NewRGBA(c.Rect), scaled.Bounds()
+		scaled := imaging.Fit(squareImg, w, h, imaging.NearestNeighbor)
+
+		out := image.NewRGBA(c.Rect)
 		sa.fillCheckerboard(out)
-		dp := image.Pt((w-b.Dx())/2, (h-b.Dy())/2)
-		draw.Draw(out, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, scaled, b.Min, draw.Over)
+
+		sb := scaled.Bounds()
+		dp := image.Pt((w-sb.Dx())/2, (h-sb.Dy())/2)
+		draw.Draw(out, image.Rectangle{Min: dp, Max: dp.Add(sb.Size())}, scaled, sb.Min, draw.Over)
+
 		return out
 	}
 

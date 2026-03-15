@@ -320,7 +320,7 @@ func applyPreviewProcessing(src image.Image) image.Image {
 
 	if ErodeEdges {
 		if rgba, ok := src.(*image.RGBA); ok {
-			return chromakey.Erode(rgba)
+			src = chromakey.Erode(rgba)
 		}
 	}
 
