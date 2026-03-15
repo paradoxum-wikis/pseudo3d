@@ -48,12 +48,13 @@ type SpriteApp struct {
 	TdswCanvas  *image.RGBA
 	AewCanvas   *image.RGBA
 
-	LockAspect    bool
-	IsNewDrag     bool
-	ColorPickMode bool
-	StartImgX     float32
-	StartImgY     float32
-	LastPreview   time.Time
+	LockAspect     bool
+	IsNewDrag      bool
+	ColorPickMode  bool
+	StartImgX      float32
+	StartImgY      float32
+	LastPreview    time.Time
+	PreviewTrigger chan struct{}
 }
 
 var StartupUpdateError error
@@ -64,11 +65,18 @@ func RunUI() {
 	w.Resize(fyne.NewSize(1152, 648))
 
 	sa := &SpriteApp{
-		App:        fyneApp,
-		Window:     w,
-		LockAspect: true,
-		IsNewDrag:  true,
+		App:            fyneApp,
+		Window:         w,
+		LockAspect:     true,
+		IsNewDrag:      true,
+		PreviewTrigger: make(chan struct{}, 1),
 	}
+	go func() {
+		for range sa.PreviewTrigger {
+			sa.renderPreview()
+			time.Sleep(24 * time.Millisecond)
+		}
+	}()
 
 	sa.buildUI()
 	sa.setupShortcuts()
@@ -103,6 +111,58 @@ func RunUI() {
 	}
 
 	w.ShowAndRun()
+}
+
+func (sa *SpriteApp) processAndRenderPreview() {
+	if !sa.Overlay.HasSelection || len(sa.NaturalSizes) == 0 {
+		fyne.Do(func() {
+			sa.TdswPreview.Image, sa.AewPreview.Image = nil, nil
+			sa.TdswPreview.Refresh()
+			sa.AewPreview.Refresh()
+		})
+		return
+	}
+
+	nat := sa.NaturalSizes[sa.CurrentImageIndex]
+	minX, minY := max(int(sa.Overlay.MinX), 0), max(int(sa.Overlay.MinY), 0)
+	maxX, maxY := min(int(sa.Overlay.MaxX), nat.X), min(int(sa.Overlay.MaxY), nat.Y)
+
+	if maxX <= minX || maxY <= minY {
+		return
+	}
+
+	pb := sa.PreviewImages[sa.CurrentImageIndex].Bounds()
+	scaleX := float64(pb.Dx()) / float64(nat.X)
+	scaleY := float64(pb.Dy()) / float64(nat.Y)
+
+	cropped := imaging.Crop(sa.PreviewImages[sa.CurrentImageIndex], image.Rect(
+		int(float64(minX)*scaleX), int(float64(minY)*scaleY),
+		int(float64(maxX)*scaleX), int(float64(maxY)*scaleY),
+	))
+	processed := applyPreviewProcessing(cropped)
+
+	fitAndCenter := func(img image.Image, w, h int) image.Image {
+		scaled := imaging.Resize(img, w, 0, imaging.NearestNeighbor)
+		canvas := image.NewRGBA(image.Rect(0, 0, w, h))
+		sa.fillCheckerboard(canvas)
+		b := scaled.Bounds()
+		dx, dy := (w-b.Dx())/2, (h-b.Dy())/2
+		draw.Draw(canvas, image.Rectangle{Min: image.Pt(dx, dy), Max: image.Pt(dx, dy).Add(b.Size())}, scaled, b.Min, draw.Over)
+		return canvas
+	}
+
+	tdswW, tdswH := sa.TdswCanvas.Rect.Dx(), sa.TdswCanvas.Rect.Dy()
+	aewW, aewH := sa.AewCanvas.Rect.Dx(), sa.AewCanvas.Rect.Dy()
+
+	tdswFinal := fitAndCenter(processed, tdswW, tdswH)
+	aewFinal := fitAndCenter(processed, aewW, aewH)
+
+	fyne.Do(func() {
+		sa.TdswPreview.Image = tdswFinal
+		sa.AewPreview.Image = aewFinal
+		sa.TdswPreview.Refresh()
+		sa.AewPreview.Refresh()
+	})
 }
 
 func (sa *SpriteApp) loadFrames(newFiles []string, progressCallback func(float64)) {
@@ -257,43 +317,52 @@ func (sa *SpriteApp) fillCheckerboard(canvas *image.RGBA) {
 }
 
 func (sa *SpriteApp) updatePreview() {
+	select {
+	case sa.PreviewTrigger <- struct{}{}:
+	default:
+	}
+}
+
+func (sa *SpriteApp) renderPreview() {
 	if !sa.Overlay.HasSelection || len(sa.NaturalSizes) == 0 {
-		sa.TdswPreview.Image, sa.AewPreview.Image = nil, nil
-		sa.TdswPreview.Refresh()
-		sa.AewPreview.Refresh()
+		fyne.Do(func() {
+			sa.TdswPreview.Image, sa.AewPreview.Image = nil, nil
+			sa.TdswPreview.Refresh()
+			sa.AewPreview.Refresh()
+		})
 		return
 	}
+
 	nat := sa.NaturalSizes[sa.CurrentImageIndex]
-	minX := min(max(int(math.Round(float64(sa.Overlay.MinX))), 0), nat.X)
-	minY := min(max(int(math.Round(float64(sa.Overlay.MinY))), 0), nat.Y)
-	maxX := min(max(int(math.Round(float64(sa.Overlay.MaxX))), 0), nat.X)
-	maxY := min(max(int(math.Round(float64(sa.Overlay.MaxY))), 0), nat.Y)
+	minX, minY := max(int(sa.Overlay.MinX), 0), max(int(sa.Overlay.MinY), 0)
+	maxX, maxY := min(int(sa.Overlay.MaxX), nat.X), min(int(sa.Overlay.MaxY), nat.Y)
 	if maxX <= minX || maxY <= minY {
 		return
 	}
-	pb := sa.PreviewImages[sa.CurrentImageIndex].Bounds()
-	scaleX := float64(pb.Dx()) / float64(nat.X)
-	scaleY := float64(pb.Dy()) / float64(nat.Y)
-	cropped := imaging.Crop(sa.PreviewImages[sa.CurrentImageIndex], image.Rect(
-		int(float64(minX)*scaleX), int(float64(minY)*scaleY),
-		int(float64(maxX)*scaleX), int(float64(maxY)*scaleY),
-	))
 
-	fitAndCenter := func(img image.Image, canvas *image.RGBA) image.Image {
-		w, h := canvas.Rect.Dx(), canvas.Rect.Dy()
-		scaled := imaging.Resize(img, w, 0, imaging.NearestNeighbor)
-		sa.fillCheckerboard(canvas)
-		b := scaled.Bounds()
-		dx := (w - b.Dx()) / 2
-		dy := (h - b.Dy()) / 2
-		draw.Draw(canvas, image.Rectangle{Min: image.Pt(dx, dy), Max: image.Pt(dx, dy).Add(b.Size())}, scaled, b.Min, draw.Over)
-		return canvas
+	pb := sa.PreviewImages[sa.CurrentImageIndex].Bounds()
+	scX, scY := float64(pb.Dx())/float64(nat.X), float64(pb.Dy())/float64(nat.Y)
+	cropRect := image.Rect(int(float64(minX)*scX), int(float64(minY)*scY), int(float64(maxX)*scX), int(float64(maxY)*scY))
+
+	processed := applyPreviewProcessing(imaging.Crop(sa.PreviewImages[sa.CurrentImageIndex], cropRect))
+
+	fit := func(c *image.RGBA) image.Image {
+		w, h := c.Rect.Dx(), c.Rect.Dy()
+		scaled := imaging.Resize(processed, w, 0, imaging.NearestNeighbor)
+		out, b := image.NewRGBA(c.Rect), scaled.Bounds()
+		sa.fillCheckerboard(out)
+		dp := image.Pt((w-b.Dx())/2, (h-b.Dy())/2)
+		draw.Draw(out, image.Rectangle{Min: dp, Max: dp.Add(b.Size())}, scaled, b.Min, draw.Over)
+		return out
 	}
 
-	sa.TdswPreview.Image = fitAndCenter(cropped, sa.TdswCanvas)
-	sa.AewPreview.Image = fitAndCenter(cropped, sa.AewCanvas)
-	sa.TdswPreview.Refresh()
-	sa.AewPreview.Refresh()
+	img1, img2 := fit(sa.TdswCanvas), fit(sa.AewCanvas)
+
+	fyne.Do(func() {
+		sa.TdswPreview.Image, sa.AewPreview.Image = img1, img2
+		sa.TdswPreview.Refresh()
+		sa.AewPreview.Refresh()
+	})
 }
 
 func (sa *SpriteApp) updateStatus(force bool) {

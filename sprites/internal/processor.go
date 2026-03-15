@@ -306,3 +306,23 @@ func RunBatchProcessing(files []string, progressCallback func(current, total int
 
 	return nil
 }
+
+func applyPreviewProcessing(src image.Image) image.Image {
+	if SkipBgRemoval {
+		return src
+	}
+
+	if ModeBg == "range" {
+		src = chromakey.RemoveRange(src, ChromaKey, ThresholdMin, Threshold)
+	} else {
+		src = chromakey.Remove(src, ChromaKey, Threshold)
+	}
+
+	if ErodeEdges {
+		if rgba, ok := src.(*image.RGBA); ok {
+			return chromakey.Erode(rgba)
+		}
+	}
+
+	return src
+}
