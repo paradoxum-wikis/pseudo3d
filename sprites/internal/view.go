@@ -18,6 +18,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -52,13 +53,13 @@ func (sa *SpriteApp) buildUI() {
 		}
 	}
 
-	helpBtn := widget.NewButton("?", func() {
+	helpBtn := widget.NewButtonWithIcon("Controls", theme.HelpIcon(), func() {
 		dialog.ShowInformation("Controls",
 			"Draw a selection by dragging on the image.\n\nArrow keys: nudge selection by 1px\nShift + Arrow keys: nudge by 10px",
 			sa.Window)
 	})
 
-	toggleLockBtn := widget.NewButton("Square Ratio", nil)
+	toggleLockBtn := widget.NewButtonWithIcon("Square Ratio", theme.ViewFullScreenIcon(), nil)
 	toggleLockBtn.OnTapped = func() {
 		sa.LockAspect = !sa.LockAspect
 		if sa.LockAspect {
@@ -413,7 +414,7 @@ func (sa *SpriteApp) buildProcessBox() {
 	sa.ProgressBar = widget.NewProgressBar()
 	sa.ProgressBar.Hide()
 
-	sa.SaveBtn = widget.NewButton("Save & Process!", func() {
+	sa.SaveBtn = widget.NewButtonWithIcon("Save & Process!", theme.DocumentSaveIcon(), func() {
 		fname := OutputFile
 		if len(sa.Files) == 1 {
 			fname = OneShotFile
@@ -421,6 +422,7 @@ func (sa *SpriteApp) buildProcessBox() {
 		msg := fmt.Sprintf("Heeho! Spritesheet saved as %s (%d frames)!", fname, len(sa.Files))
 		sa.processSelection(nil, msg)
 	})
+	sa.SaveBtn.Importance = widget.HighImportance
 
 	sa.SaveOneBtn = widget.NewButton("One-shot current frame!", func() {
 		msg := fmt.Sprintf("Heeho! One-shot saved as %s!", OneShotFile)
@@ -527,7 +529,7 @@ func (sa *SpriteApp) buildDragArea() fyne.Widget {
 }
 
 func (sa *SpriteApp) buildImportBtn() *widget.Button {
-	return widget.NewButton("Import Captures", func() {
+	return widget.NewButtonWithIcon("Import Captures", theme.FolderOpenIcon(), func() {
 		opts := []string{"Single Frame (1F)", "Full Rotation (24F)", "Custom Limit..."}
 
 		var limitSelect *widget.RadioGroup
@@ -565,7 +567,7 @@ func (sa *SpriteApp) buildImportBtn() *widget.Button {
 }
 
 func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
-	return widget.NewButton("Settings", func() {
+	return widget.NewButtonWithIcon("Settings", theme.SettingsIcon(), func() {
 		sizeEntry := widget.NewEntry()
 		sizeEntry.SetText(fmt.Sprintf("%d", SizeTarget))
 
