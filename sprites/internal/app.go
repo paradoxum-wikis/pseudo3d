@@ -393,21 +393,22 @@ func (sa *SpriteApp) renderPreview() {
 	dpSq := image.Pt((sq-b.Dx())/2, (sq-b.Dy())/2)
 	draw.Draw(squareImg, image.Rectangle{Min: dpSq, Max: dpSq.Add(b.Size())}, finalImage, b.Min, draw.Src)
 
-	fit := func(c *image.RGBA) image.Image {
-		w, h := c.Rect.Dx(), c.Rect.Dy()
-		scaled := imaging.Fit(squareImg, w, h, imaging.NearestNeighbor)
+	targetSq := min(sa.TdswCanvas.Rect.Dx(), sa.TdswCanvas.Rect.Dy())
+	scaledFinal := imaging.Resize(squareImg, targetSq, targetSq, imaging.NearestNeighbor)
+	sb := scaledFinal.Bounds()
 
+	applyToCanvas := func(c *image.RGBA) image.Image {
 		out := image.NewRGBA(c.Rect)
 		sa.fillCheckerboard(out)
 
-		sb := scaled.Bounds()
+		w, h := c.Rect.Dx(), c.Rect.Dy()
 		dp := image.Pt((w-sb.Dx())/2, (h-sb.Dy())/2)
-		draw.Draw(out, image.Rectangle{Min: dp, Max: dp.Add(sb.Size())}, scaled, sb.Min, draw.Over)
+		draw.Draw(out, image.Rectangle{Min: dp, Max: dp.Add(sb.Size())}, scaledFinal, sb.Min, draw.Over)
 
 		return out
 	}
 
-	img1, img2 := fit(sa.TdswCanvas), fit(sa.AewCanvas)
+	img1, img2 := applyToCanvas(sa.TdswCanvas), applyToCanvas(sa.AewCanvas)
 
 	fyne.Do(func() {
 		sa.TdswPreview.Image, sa.AewPreview.Image = img1, img2
