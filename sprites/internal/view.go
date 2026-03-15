@@ -181,7 +181,7 @@ func (sa *SpriteApp) buildFuaround() *fyne.Container {
 
 	form := widget.NewForm(
 		widget.NewFormItem("Hex Code", sa.ColorEntry),
-		widget.NewFormItem("Mode", bgModeRadio),
+		widget.NewFormItem("BG Removal", bgModeRadio),
 		widget.NewFormItem("Max Thresh", container.NewBorder(nil, nil, nil, threshLabel, threshSlider)),
 		widget.NewFormItem("Min Thresh", threshMinRow),
 	)
@@ -191,8 +191,8 @@ func (sa *SpriteApp) buildFuaround() *fyne.Container {
 	return container.NewVBox(
 		colorBox,
 		form,
-		skipBgCheck,
 		erodeCheck,
+		skipBgCheck,
 		autocropCheck,
 	)
 }
