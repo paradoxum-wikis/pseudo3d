@@ -36,6 +36,7 @@ type SpriteApp struct {
 	ProgressBar        *widget.ProgressBar
 	ColorPreview       *canvas.Rectangle
 	PickColorToggleBtn *widget.Button
+	ColorEntry         *widget.Entry
 
 	pendingUpdateInfo *UpdateInfo
 	UpdateChipLabel   *widget.Label

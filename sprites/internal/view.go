@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"image"
-	"image/color"
 	"net/http"
 	"net/url"
 	"os"
@@ -53,12 +52,6 @@ func (sa *SpriteApp) buildUI() {
 		}
 	}
 
-	colorBox := container.NewHBox(
-		widget.NewLabel("Key:"),
-		container.NewCenter(sa.ColorPreview),
-		sa.PickColorToggleBtn,
-	)
-
 	helpBtn := widget.NewButton("?", func() {
 		dialog.ShowInformation("Controls",
 			"Draw a selection by dragging on the image.\n\nArrow keys: nudge selection by 1px\nShift + Arrow keys: nudge by 10px",
@@ -88,9 +81,9 @@ func (sa *SpriteApp) buildUI() {
 	)
 
 	footer := container.NewBorder(nil, nil, nil, updateBox, sa.StatusLabel)
-
+	fuaroundPanel := sa.buildFuaround()
 	controls := container.NewVBox(
-		container.NewBorder(nil, nil, nil, container.NewHBox(importBtn, settingsBtn, layout.NewSpacer(), colorBox, helpBtn), toggleLockBtn),
+		container.NewBorder(nil, nil, nil, container.NewHBox(importBtn, settingsBtn, layout.NewSpacer(), helpBtn), toggleLockBtn),
 		container.NewBorder(nil, nil, nil, sa.FrameLabel, sa.Slider),
 		processBox,
 		footer,
@@ -103,10 +96,107 @@ func (sa *SpriteApp) buildUI() {
 		container.NewCenter(sa.AewPreview),
 	)
 
-	sa.Window.SetContent(container.NewBorder(nil, controls, nil, nil,
-		container.NewBorder(nil, nil, nil, previewPanel, imageContainer),
+	sa.Window.SetContent(container.NewBorder(
+		nil,
+		controls,
+		container.NewPadded(fuaroundPanel),
+		container.NewPadded(previewPanel),
+		imageContainer,
 	))
 }
+
+func (sa *SpriteApp) buildFuaround() *fyne.Container {
+	skipBgCheck := widget.NewCheck("Skip BG Removal", func(b bool) {
+		SkipBgRemoval = b
+		sa.updatePreview()
+	})
+	skipBgCheck.SetChecked(SkipBgRemoval)
+
+	erodeCheck := widget.NewCheck("Erode Edges", func(b bool) {
+		ErodeEdges = b
+		sa.updatePreview()
+	})
+	erodeCheck.SetChecked(ErodeEdges)
+
+	autocropCheck := widget.NewCheck("Skip Autocrop", func(b bool) {
+		SkipAutocrop = b
+		sa.updatePreview()
+	})
+	autocropCheck.SetChecked(SkipAutocrop)
+
+	threshLabel := widget.NewLabel(fmt.Sprintf("%.0f", Threshold))
+	threshSlider := widget.NewSlider(0, 60000)
+	threshSlider.Step, threshSlider.Value = 100, Threshold
+
+	threshMinLabel := widget.NewLabel(fmt.Sprintf("%.0f", ThresholdMin))
+	threshMinSlider := widget.NewSlider(0, 60000)
+	threshMinSlider.Step, threshMinSlider.Value = 100, ThresholdMin
+
+	threshMinRow := container.NewBorder(nil, nil, nil, threshMinLabel, threshMinSlider)
+	if ModeBg != "range" {
+		threshMinRow.Hide()
+	}
+
+	bgModeRadio := widget.NewRadioGroup([]string{"Hard", "Range"}, func(mode string) {
+		ModeBg = strings.ToLower(mode)
+		if mode == "Range" {
+			threshMinRow.Show()
+		} else {
+			threshMinRow.Hide()
+		}
+		sa.updatePreview()
+	})
+	bgModeRadio.Horizontal = true
+	bgModeRadio.SetSelected(func() string {
+		if ModeBg == "range" {
+			return "Range"
+		}
+		return "Hard"
+	}())
+
+	threshSlider.OnChanged = func(v float64) {
+		Threshold = v
+		threshLabel.SetText(fmt.Sprintf("%.0f", v))
+		sa.updatePreview()
+	}
+	threshMinSlider.OnChanged = func(v float64) {
+		ThresholdMin = v
+		threshMinLabel.SetText(fmt.Sprintf("%.0f", v))
+		sa.updatePreview()
+	}
+
+	sa.ColorEntry = widget.NewEntry()
+	sa.ColorEntry.SetText(HexColor)
+	sa.ColorEntry.OnChanged = func(s string) {
+		HexColor = s
+		if c, err := ParseHexColor(s); err == nil {
+			ChromaKey = c
+			if sa.ColorPreview != nil {
+				sa.ColorPreview.FillColor = ChromaKey
+				sa.ColorPreview.Refresh()
+			}
+			sa.updatePreview()
+		}
+	}
+
+	form := widget.NewForm(
+		widget.NewFormItem("Hex Code", sa.ColorEntry),
+		widget.NewFormItem("Mode", bgModeRadio),
+		widget.NewFormItem("Max Thresh", container.NewBorder(nil, nil, nil, threshLabel, threshSlider)),
+		widget.NewFormItem("Min Thresh", threshMinRow),
+	)
+
+	colorBox := container.NewHBox(widget.NewLabel("Key:"), container.NewCenter(sa.ColorPreview), sa.PickColorToggleBtn)
+
+	return container.NewVBox(
+		colorBox,
+		form,
+		skipBgCheck,
+		erodeCheck,
+		autocropCheck,
+	)
+}
+
 func (sa *SpriteApp) loadAvatar(username string) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get("https://github.com/" + username + ".png?size=24")
@@ -421,14 +511,15 @@ func (sa *SpriteApp) buildDragArea() fyne.Widget {
 
 			c := previewImg.At(pb.Min.X+px, pb.Min.Y+py)
 			r, g, b, _ := c.RGBA()
-			ChromaKey = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: 255}
-			HexColor = fmt.Sprintf("%02X%02X%02X", ChromaKey.R, ChromaKey.G, ChromaKey.B)
-			if sa.ColorPreview != nil {
-				sa.ColorPreview.FillColor = ChromaKey
-				sa.ColorPreview.Refresh()
-			}
+
 			sa.ColorPickMode = false
 			sa.PickColorToggleBtn.SetText("Chroma Key Picker")
+
+			newHex := fmt.Sprintf("%02X%02X%02X", uint8(r>>8), uint8(g>>8), uint8(b>>8))
+
+			if sa.ColorEntry != nil {
+				sa.ColorEntry.SetText(newHex)
+			}
 		},
 	}
 	dragArea.ExtendBaseWidget(dragArea)
@@ -484,12 +575,6 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		skipUiCheck := widget.NewCheck("Skip UI on Startup", nil)
 		skipUiCheck.SetChecked(ProcessMode)
 
-		skipBgCheck := widget.NewCheck("Skip Background Removal", nil)
-		skipBgCheck.SetChecked(SkipBgRemoval)
-
-		skipAutocropCheck := widget.NewCheck("Skip Autocrop", nil)
-		skipAutocropCheck.SetChecked(SkipAutocrop)
-
 		inEntry := widget.NewEntry()
 		inEntry.SetText(InputDir)
 
@@ -499,67 +584,8 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		oneShotEntry := widget.NewEntry()
 		oneShotEntry.SetText(OneShotFile)
 
-		erodeCheck := widget.NewCheck("Erode Edges", nil)
-		erodeCheck.SetChecked(ErodeEdges)
-
-		colorEntry := widget.NewEntry()
-		colorEntry.SetText(HexColor)
-
 		skipPrescaleCheck := widget.NewCheck("Skip Prescale (Full Resolution Preview)", nil)
 		skipPrescaleCheck.SetChecked(SkipPrescale)
-
-		bgModeRadio := widget.NewRadioGroup([]string{"Hard", "Range"}, nil)
-		bgModeRadio.Horizontal = true
-
-		if ModeBg == "range" {
-			bgModeRadio.SetSelected("Range")
-		} else {
-			bgModeRadio.SetSelected("Hard")
-		}
-
-		threshLabel := widget.NewLabel(fmt.Sprintf("%.0f", Threshold))
-		threshSlider := widget.NewSlider(0, 60000)
-		threshSlider.Step = 100
-		threshSlider.SetValue(Threshold)
-		threshSlider.OnChanged = func(v float64) {
-			threshLabel.SetText(fmt.Sprintf("%.0f", v))
-		}
-		threshRow := container.NewBorder(nil, nil, nil, threshLabel, threshSlider)
-
-		threshMinLabel := widget.NewLabel(fmt.Sprintf("%.0f", ThresholdMin))
-		threshMinSlider := widget.NewSlider(0, 60000)
-		threshMinSlider.Step = 100
-		threshMinSlider.SetValue(ThresholdMin)
-		threshMinSlider.OnChanged = func(v float64) {
-			threshMinLabel.SetText(fmt.Sprintf("%.0f", v))
-		}
-		threshMinRow := container.NewBorder(nil, nil, nil, threshMinLabel, threshMinSlider)
-
-		threshMinFormItem := widget.NewFormItem("Min BG Threshold", threshMinRow)
-
-		if ModeBg != "range" {
-			threshMinRow.Hide()
-		}
-
-		bgModeRadio.OnChanged = func(mode string) {
-			if mode == "Range" {
-				threshMinRow.Show()
-			} else {
-				threshMinRow.Hide()
-			}
-		}
-
-		bgTab := container.NewVBox(
-			skipBgCheck,
-			skipAutocropCheck,
-			erodeCheck,
-			widget.NewForm(
-				widget.NewFormItem("BG Removal Mode", bgModeRadio),
-				widget.NewFormItem("Max BG Threshold", threshRow),
-				threshMinFormItem,
-				widget.NewFormItem("Chroma Key Color", colorEntry),
-			),
-		)
 
 		fileTab := container.NewVBox(
 			widget.NewForm(
@@ -577,7 +603,6 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 		)
 
 		tabs := container.NewAppTabs(
-			container.NewTabItem("Process", container.NewPadded(bgTab)),
 			container.NewTabItem("Output", container.NewPadded(fileTab)),
 			container.NewTabItem("Advanced", container.NewPadded(appTab)),
 		)
@@ -589,31 +614,17 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 					return
 				}
 				updates := map[string]string{
-					"skip-ui":          strconv.FormatBool(skipUiCheck.Checked),
-					"size":             sizeEntry.Text,
-					"size-one":         strconv.FormatBool(sizeOneCheck.Checked),
-					"mode-bg":          strings.ToLower(bgModeRadio.Selected),
-					"threshold-bg":     fmt.Sprintf("%.0f", threshSlider.Value),
-					"threshold-bg-min": fmt.Sprintf("%.0f", threshMinSlider.Value),
-					"skip-bg":          strconv.FormatBool(skipBgCheck.Checked),
-					"skip-autocrop":    strconv.FormatBool(skipAutocropCheck.Checked),
-					"in":               inEntry.Text,
-					"out":              outEntry.Text,
-					"out-one":          oneShotEntry.Text,
-					"erode":            strconv.FormatBool(erodeCheck.Checked),
-					"color-bg":         colorEntry.Text,
-					"skip-prescale":    strconv.FormatBool(skipPrescaleCheck.Checked),
+					"skip-ui":       strconv.FormatBool(skipUiCheck.Checked),
+					"size":          sizeEntry.Text,
+					"size-one":      strconv.FormatBool(sizeOneCheck.Checked),
+					"in":            inEntry.Text,
+					"out":           outEntry.Text,
+					"out-one":       oneShotEntry.Text,
+					"skip-prescale": strconv.FormatBool(skipPrescaleCheck.Checked),
 				}
 				err := UpdateConfig(updates)
 				if err != nil {
 					dialog.ShowError(err, sa.Window)
-				} else {
-					var parseErr error
-					ChromaKey, parseErr = ParseHexColor(HexColor)
-					if parseErr == nil && sa.ColorPreview != nil {
-						sa.ColorPreview.FillColor = ChromaKey
-						sa.ColorPreview.Refresh()
-					}
 				}
 			},
 			sa.Window,
