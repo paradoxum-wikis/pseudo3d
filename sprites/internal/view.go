@@ -628,6 +628,7 @@ func (sa *SpriteApp) buildSettingsBtn() *widget.Button {
 				if err != nil {
 					dialog.ShowError(err, sa.Window)
 				}
+				dialog.ShowInformation("Settings", "Settings saved!", sa.Window)
 			},
 			sa.Window,
 		)
