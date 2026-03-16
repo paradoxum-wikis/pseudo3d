@@ -66,6 +66,6 @@
 if (window.PseudoImportCSS !== false) {
 	importArticle({
 		type: "style",
-		article: "u:dev:MediaWiki:Pseudo3D.css",
+		article: "u:dev:MediaWiki:Pseudo3D.css", // ./styles.css
 	});
 }
