@@ -3,7 +3,7 @@ local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local CaptureService = game:GetService("CaptureService")
 local Lighting = game:GetService("Lighting")
-local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
+local AnimationClipProvider = game:GetService("AnimationClipProvider")
 
 --  CONFIGURATION
 local ROTATIONS       = 24					-- number of frames per full rotation
@@ -27,7 +27,7 @@ local BLOOM_INTENSITY = 0					-- set to nil to leave bloom as is
 local CLEAR_WORKSPACE = true				-- remove everything in workspace except Target model
 local PREVIEW_FPS     = 10					-- frames per second during preview rotation
 local TARGET_NAME     = "Target"			-- name of the model to capture
-local ANIM_NAME       = "Animation"			-- name of the animation to play
+local ANIM_NAME       = "Animation"			-- name of the animation to play (also prefix for variants)
 local TARGET_EFFECTS  = false				-- show anything that emits from the model
 
 local player = Players.LocalPlayer
@@ -46,18 +46,46 @@ local function createLabel(height, yOffset, yPos, color, size, bold, visible)
 	lbl.BackgroundTransparency = 1
 	lbl.TextColor3 = color
 	lbl.TextSize = size
-	local weight = bold and Enum.FontWeight.Bold or Enum.FontWeight.Regular
-	lbl.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", weight)
+	lbl.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json",
+		bold and Enum.FontWeight.Bold or Enum.FontWeight.Regular)
 	lbl.Visible = visible ~= false
 	return lbl
 end
 
-local label = createLabel(30, 16, 0, Color3.new(1, 1, 1), 20, true)
-local subLabel = createLabel(24, 44, 0, Color3.new(0.8, 0.8, 0.8), 16, false)
-local botLabel = createLabel(24, -30, 1, Color3.new(1, 1, 0.5), 16, true)
+local label           = createLabel(30,  16, 0, Color3.new(1, 1, 1),       20, true)
+local subLabel        = createLabel(24,  44, 0, Color3.new(0.8, 0.8, 0.8), 16, false)
+local botLabel        = createLabel(24, -30, 1, Color3.new(1, 1, 0.5),     16, true)
+local previewLabel    = createLabel(30,  16, 0, Color3.new(0, 1, 0.5),     22, true,  false)
+local previewSubLabel = createLabel(24,  44, 0, Color3.new(0.7, 1, 0.8),   16, false, false)
 
-local previewLabel = createLabel(30, 16, 0, Color3.new(0, 1, 0.5), 22, true, false)
-local previewSubLabel = createLabel(24, 44, 0, Color3.new(0.7, 1, 0.8), 16, false, false)
+local animList = Instance.new("Frame", bg)
+animList.AutomaticSize = Enum.AutomaticSize.Y
+animList.Size = UDim2.fromOffset(220, 0)
+animList.Position = UDim2.new(0, 12, 1, -12)
+animList.AnchorPoint = Vector2.new(0, 1)
+animList.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+animList.BackgroundTransparency = 0.35
+animList.BorderSizePixel = 0
+animList.Visible = false
+
+Instance.new("UICorner", animList).CornerRadius = UDim.new(0, 3)
+local _l = Instance.new("UIListLayout", animList)
+_l.SortOrder = Enum.SortOrder.LayoutOrder
+_l.Padding = UDim.new(0, 2)
+
+local _p = Instance.new("UIPadding", animList)
+_p.PaddingTop = UDim.new(0, 6); _p.PaddingBottom = UDim.new(0, 6)
+_p.PaddingLeft = UDim.new(0, 8); _p.PaddingRight = UDim.new(0, 8)
+
+local animListHeader = Instance.new("TextLabel", animList)
+animListHeader.Size = UDim2.new(1, 0, 0, 18)
+animListHeader.BackgroundTransparency = 1
+animListHeader.TextColor3 = Color3.fromRGB(180, 180, 180)
+animListHeader.TextSize = 13
+animListHeader.TextXAlignment = Enum.TextXAlignment.Left
+animListHeader.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold)
+animListHeader.Text = "Animations  [ H / J ]"
+animListHeader.LayoutOrder = 0
 
 local model = workspace:WaitForChild(TARGET_NAME, 10)
 if not model then return warn("No '" .. TARGET_NAME .. "' found in workspace!") end
@@ -103,18 +131,68 @@ if not TARGET_EFFECTS then
 	end
 end
 
-local targetAnimSeq = model:FindFirstChild(ANIM_NAME)
-local humOrCtrl = model:FindFirstChildOfClass("Humanoid") or model:FindFirstChildOfClass("AnimationController")
+local animSequences = {}
+for _, child in ipairs(model:GetChildren()) do
+	if child:IsA("AnimationClip") and (child.Name == ANIM_NAME or child.Name:match("^" .. ANIM_NAME .. "%d+$")) then
+		table.insert(animSequences, child)
+	end
+end
 
-local animationTrack = nil
-if humOrCtrl and targetAnimSeq and targetAnimSeq:IsA("KeyframeSequence") then
-	local animator = humOrCtrl:FindFirstChildOfClass("Animator") or Instance.new("Animator", humOrCtrl)
+local humOrCtrl = model:FindFirstChildOfClass("Humanoid") or model:FindFirstChildOfClass("AnimationController")
+local animator  = humOrCtrl and (humOrCtrl:FindFirstChildOfClass("Animator") or Instance.new("Animator", humOrCtrl)) or nil
+
+local animationTrack   = nil
+local currentAnimIndex = 1
+
+local function loadAnimTrack(seq)
+	if not animator or not seq then return nil end
 	local anim = Instance.new("Animation")
-	anim.AnimationId = KeyframeSequenceProvider:RegisterKeyframeSequence(targetAnimSeq)
-	animationTrack = animator:LoadAnimation(anim)
-	animationTrack:Play()
-	animationTrack:AdjustSpeed(0)
-	animationTrack.TimePosition = 0
+	anim.AnimationId = AnimationClipProvider:RegisterAnimationClip(seq)
+	local track = animator:LoadAnimation(anim)
+	track:Play()
+	track:AdjustSpeed(0)
+	track.TimePosition = 0
+	return track
+end
+
+if #animSequences > 0 then
+	animationTrack = loadAnimTrack(animSequences[1])
+end
+
+local animRowLabels = {}
+local FONT_BOLD = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold)
+local FONT_REG  = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Regular)
+animList.Visible = #animSequences >= 2
+for i, seq in ipairs(animSequences) do
+	local row = Instance.new("TextLabel", animList)
+	row.Size = UDim2.new(1, 0, 0, 18)
+	row.BackgroundTransparency = 1
+	row.TextSize = 13
+	row.TextXAlignment = Enum.TextXAlignment.Left
+	row.LayoutOrder = i
+	row.TextColor3 = i == 1 and Color3.fromRGB(80, 255, 180) or Color3.fromRGB(200, 200, 200)
+	row.FontFace   = i == 1 and FONT_BOLD or FONT_REG
+	row.Text       = i == 1 and "> " .. seq.Name or "  " .. seq.Name
+	animRowLabels[i] = row
+end
+
+local function switchToAnim(index)
+	if #animSequences == 0 then return end
+	index = ((index - 1) % #animSequences) + 1
+	if index == currentAnimIndex then return end
+	local prevTime = animationTrack and animationTrack.TimePosition or 0
+	if animationTrack then animationTrack:Stop(); animationTrack:Destroy() end
+	animRowLabels[currentAnimIndex].TextColor3 = Color3.fromRGB(200, 200, 200)
+	animRowLabels[currentAnimIndex].FontFace   = FONT_REG
+	animRowLabels[currentAnimIndex].Text       = "  " .. animSequences[currentAnimIndex].Name
+	currentAnimIndex = index
+	animRowLabels[currentAnimIndex].TextColor3 = Color3.fromRGB(80, 255, 180)
+	animRowLabels[currentAnimIndex].FontFace   = FONT_BOLD
+	animRowLabels[currentAnimIndex].Text       = "> " .. animSequences[currentAnimIndex].Name
+	animationTrack = loadAnimTrack(animSequences[currentAnimIndex])
+	if animationTrack then
+		animationTrack.TimePosition = math.min(prevTime, animationTrack.Length > 0 and animationTrack.Length or 10)
+	end
 end
 
 task.wait(0.5)
@@ -161,7 +239,6 @@ if BACKDROP then
 	backdrop.Anchored = true
 	backdrop.CanCollide = false
 	backdrop.CastShadow = false
-
 	local surfaceGui = Instance.new("SurfaceGui", backdrop)
 	surfaceGui.LightInfluence = 0
 	local bgFrame = Instance.new("Frame", surfaceGui)
@@ -189,18 +266,18 @@ local cam = workspace.CurrentCamera
 cam.CameraType = Enum.CameraType.Scriptable
 cam.FieldOfView = fov
 
-local currentFrame        = 1
-local heightOffset        = 0
-local distance            = DISTANCE
-local pivotOffset         = 0
-local depthOffset         = 0
-local showPivot           = false
-local previewing          = false
-local previewConnection   = nil
-local capturing           = false
-local paused              = false
-local isCorpse            = false
-local originalProps       = {}
+local currentFrame		= 1
+local heightOffset		= 0
+local distance			= DISTANCE
+local pivotOffset		= 0
+local depthOffset		= 0
+local showPivot			= false
+local previewing		= false
+local previewConnection	= nil
+local capturing			= false
+local paused            = false
+local isCorpse          = false
+local originalProps		= {}
 
 local function getLookAt()
 	local right   = Vector3.new(math.cos(startingAngleOffset), 0, -math.sin(startingAngleOffset))
@@ -220,10 +297,10 @@ local function updateUI()
 		if rootPart then
 			side = math.abs(startingAngleOffset - getFrontAngle()) < 0.01 and "Front" or "Back"
 		end
-		local animPos = animationTrack and string.format(" | Anim: %.2fs", animationTrack.TimePosition) or ""
+		local animPos  = animationTrack and string.format(" | Anim: %.2fs", animationTrack.TimePosition) or ""
 		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f%s | Frame %d/%d",
 			side, heightOffset, pivotOffset, depthOffset, distance, animPos, currentFrame, ROTATIONS)
-		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | N/M: anim | O: pivot point | P: preview | K/L: rotate | 1: corpse"
+		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | N/M: anim time | O: pivot | P: preview | K/L: rotate | 1: corpse"
 		botLabel.Text = "Q: capture all frames | C: capture one frame"
 		botLabel.Visible = true
 	end
@@ -238,7 +315,6 @@ local function setFrame(i)
 		backdrop.CFrame = CFrame.lookAt(lookAt + ((lookAt - camPos).Unit * 500), camPos)
 	end
 	pivotIndicator.CFrame = CFrame.new(lookAt)
-
 	updateUI()
 end
 
@@ -354,16 +430,14 @@ local keyActions = {
 			animationTrack.TimePosition = math.min(maxTime, animationTrack.TimePosition + ANIM_STEP)
 		end
 	end,
+	[Enum.KeyCode.H] = function() switchToAnim(currentAnimIndex - 1) end,
+	[Enum.KeyCode.J] = function() switchToAnim(currentAnimIndex + 1) end,
 	[Enum.KeyCode.O] = function()
 		showPivot = not showPivot
 		pivotBillboard.Enabled = showPivot
 	end,
 	[Enum.KeyCode.P] = function()
-		if previewing then
-			stopPreview()
-		else
-			startPreview()
-		end
+		if previewing then stopPreview() else startPreview() end
 	end,
 	[Enum.KeyCode.Space] = function()
 		if previewing then
@@ -401,12 +475,8 @@ local keyActions = {
 	        table.clear(originalProps)
 	    end
 	end,
-	[Enum.KeyCode.Q] = function()
-		captureNext()
-	end,
-	[Enum.KeyCode.C] = function()
-		captureNext(true)
-	end,
+	[Enum.KeyCode.Q] = function() captureNext() end,
+	[Enum.KeyCode.C] = function() captureNext(true) end,
 }
 
 UIS.InputBegan:Connect(function(input, processed)
