@@ -319,7 +319,9 @@ gcLgc4RKxr21zq2UlJSM]]></BinaryString>
 				<ProtectedString
 					name="Source"
 				><![CDATA[-- Anything inside Maker will be deleted on auto updates!
--- If possible, do NOT store and save anything important here!]]></ProtectedString>
+-- If possible, do NOT store and save anything important here!
+
+-- Pseudo3D $(buildver)]]></ProtectedString>
 				<string name="ScriptGuid">{F3CD0435-59A1-4D46-A041-F762978A88C6}</string>
 				<BinaryString name="AttributesSerialize" />
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
