@@ -6,29 +6,29 @@ local Lighting = game:GetService("Lighting")
 local AnimationClipProvider = game:GetService("AnimationClipProvider")
 
 --  CONFIGURATION
-local ROTATIONS       = 24					-- number of frames per full rotation
-local DISTANCE        = 12       			-- camera distance from model center
-local HEIGHT_STEP     = .1        			-- units moved per E/D press
-local HEIGHT_MIN      = -10      			-- lowest the camera can go (relative to model center)
-local HEIGHT_MAX      = 10       			-- highest the camera can go (relative to model center)
-local PIVOT_STEP      = .1      			-- units moved per A/S press
-local PIVOT_MIN       = -10      			-- leftmost pivot shift allowed
-local PIVOT_MAX       = 10       			-- rightmost pivot shift allowed
-local DEPTH_MIN       = -10      			-- furthest depth shift allowed
-local DEPTH_MAX       = 10       			-- nearest depth shift allowed
-local ZOOM_STEP       = .1        			-- units moved per R/F press
-local ZOOM_MIN        = 2        			-- closest the camera can get
-local ZOOM_MAX        = 50       			-- furthest the camera can get
-local ANIM_STEP       = 0.1     			-- animation time moved per N/M press
-local BACKDROP		  = true       			-- whether to use a backdrop behind the model
-local BACKDROP_COLOR  = Color3.new(1, 0, 1)	-- chroma key color (magenta)
-local FLAT_LIGHTING   = false     			-- set false to keep your scene lighting as is
-local BLOOM_INTENSITY = 0					-- set to nil to leave bloom as is
-local CLEAR_WORKSPACE = true				-- remove everything in workspace except Target model
-local PREVIEW_FPS     = 10					-- frames per second during preview rotation
-local TARGET_NAME     = "Target"			-- name of the model to capture
-local ANIM_NAME       = "Animation"			-- name of the animation to play (also prefix for variants)
-local TARGET_EFFECTS  = false				-- show anything that emits from the model
+local ROTATIONS       = 24							-- number of frames per full rotation
+local DISTANCE        = 12							-- camera distance from model center
+local HEIGHT_STEP     = .1							-- units moved per E/D press
+local HEIGHT_MIN      = -10							-- lowest the camera can go (relative to model center)
+local HEIGHT_MAX      = 10							-- highest the camera can go (relative to model center)
+local PIVOT_STEP      = .1							-- units moved per A/S press
+local PIVOT_MIN       = -10							-- leftmost pivot shift allowed
+local PIVOT_MAX       = 10							-- rightmost pivot shift allowed
+local DEPTH_MIN       = -10							-- furthest depth shift allowed
+local DEPTH_MAX       = 10							-- nearest depth shift allowed
+local ZOOM_STEP       = .1							-- units moved per R/F press
+local ZOOM_MIN        = 2							-- closest the camera can get
+local ZOOM_MAX        = 50							-- furthest the camera can get
+local ANIM_STEP       = 0.1							-- animation time moved per N/M press
+local BACKDROP		  = true						-- whether to use a backdrop behind the model
+local BACKDROP_COLOR  = Color3.fromRGB(255, 0, 255)	-- chroma key color (magenta)
+local FLAT_LIGHTING   = false						-- set false to keep your scene lighting as is
+local BLOOM_INTENSITY = 0							-- set to nil to leave bloom as is
+local CLEAR_WORKSPACE = true						-- remove everything in workspace except Target model
+local PREVIEW_FPS     = 10							-- frames per second during preview rotation
+local TARGET_NAME     = "Target"					-- name of the model to capture
+local ANIM_NAME       = "Animation"					-- name of the animation to play (also prefix for variants)
+local TARGET_EFFECTS  = false						-- show anything that emits from the model
 
 local player = Players.LocalPlayer
 for _, gui in ipairs(player.PlayerGui:GetChildren()) do
@@ -39,10 +39,28 @@ local bg = Instance.new("ScreenGui", player.PlayerGui)
 bg.IgnoreGuiInset = true
 bg.DisplayOrder = 999
 
-local function createLabel(height, yOffset, yPos, color, size, bold, visible)
-	local lbl = Instance.new("TextLabel", bg)
-	lbl.Size = UDim2.fromOffset(700, height)
-	lbl.Position = UDim2.new(0.5, -350, yPos, yOffset)
+local function makePanel(anchorY, posY, offsetY)
+	local f = Instance.new("Frame", bg)
+	f.AutomaticSize = Enum.AutomaticSize.XY
+	f.Position = UDim2.new(0.5, 0, posY, offsetY)
+	f.AnchorPoint = Vector2.new(0.5, anchorY)
+	f.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+	f.BackgroundTransparency = 0.35
+	f.BorderSizePixel = 0
+	Instance.new("UICorner", f).CornerRadius = UDim.new(0, 3)
+	local l = Instance.new("UIListLayout", f)
+	l.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	l.Padding = UDim.new(0, 2)
+	local p = Instance.new("UIPadding", f)
+	p.PaddingTop = UDim.new(0, 6); p.PaddingBottom = UDim.new(0, 6)
+	p.PaddingLeft = UDim.new(0, 12); p.PaddingRight = UDim.new(0, 12)
+	return f
+end
+
+local function makeLabel(parent, color, size, bold, visible)
+	local lbl = Instance.new("TextLabel", parent)
+	lbl.Size = UDim2.new(0, 0, 0, 0)
+	lbl.AutomaticSize = Enum.AutomaticSize.XY
 	lbl.BackgroundTransparency = 1
 	lbl.TextColor3 = color
 	lbl.TextSize = size
@@ -52,11 +70,14 @@ local function createLabel(height, yOffset, yPos, color, size, bold, visible)
 	return lbl
 end
 
-local label           = createLabel(30,  16, 0, Color3.new(1, 1, 1),       20, true)
-local subLabel        = createLabel(24,  44, 0, Color3.new(0.8, 0.8, 0.8), 16, false)
-local botLabel        = createLabel(24, -30, 1, Color3.new(1, 1, 0.5),     16, true)
-local previewLabel    = createLabel(30,  16, 0, Color3.new(0, 1, 0.5),     22, true,  false)
-local previewSubLabel = createLabel(24,  44, 0, Color3.new(0.7, 1, 0.8),   16, false, false)
+local topPanel        = makePanel(0, 0, 12)
+local label           = makeLabel(topPanel, Color3.fromRGB(255, 255, 255), 20, true)
+local subLabel        = makeLabel(topPanel, Color3.fromRGB(204, 204, 204), 16, false)
+local previewLabel    = makeLabel(topPanel, Color3.fromRGB(0, 255, 128),   22, true,  false)
+local previewSubLabel = makeLabel(topPanel, Color3.fromRGB(179, 255, 204), 16, false, false)
+
+local botPanel = makePanel(1, 1, -12)
+local botLabel = makeLabel(botPanel, Color3.fromRGB(255, 255, 128), 16, true)
 
 local animList = Instance.new("Frame", bg)
 animList.AutomaticSize = Enum.AutomaticSize.Y
@@ -67,24 +88,21 @@ animList.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 animList.BackgroundTransparency = 0.35
 animList.BorderSizePixel = 0
 animList.Visible = false
-
 Instance.new("UICorner", animList).CornerRadius = UDim.new(0, 3)
 local _l = Instance.new("UIListLayout", animList)
 _l.SortOrder = Enum.SortOrder.LayoutOrder
 _l.Padding = UDim.new(0, 2)
-
 local _p = Instance.new("UIPadding", animList)
 _p.PaddingTop = UDim.new(0, 6); _p.PaddingBottom = UDim.new(0, 6)
 _p.PaddingLeft = UDim.new(0, 8); _p.PaddingRight = UDim.new(0, 8)
-
 local animListHeader = Instance.new("TextLabel", animList)
 animListHeader.Size = UDim2.new(1, 0, 0, 18)
 animListHeader.BackgroundTransparency = 1
-animListHeader.TextColor3 = Color3.fromRGB(180, 180, 180)
+animListHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 animListHeader.TextSize = 13
 animListHeader.TextXAlignment = Enum.TextXAlignment.Left
 animListHeader.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold)
-animListHeader.Text = "Animations  [ H / J ]"
+animListHeader.Text = "Change Animation: H/J"
 animListHeader.LayoutOrder = 0
 
 local model = workspace:WaitForChild(TARGET_NAME, 10)
@@ -218,8 +236,8 @@ if FLAT_LIGHTING then
 			child:Destroy()
 		end
 	end
-	Lighting.Ambient = Color3.new(1, 1, 1)
-	Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+	Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+	Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
 	Lighting.Brightness = 0
 	Lighting.GlobalShadows = false
 	Lighting.FogEnd = 100000
@@ -259,7 +277,7 @@ pivotBillboard.Enabled = false
 
 local pivotDot = Instance.new("Frame", pivotBillboard)
 pivotDot.Size = UDim2.fromScale(1, 1)
-pivotDot.BackgroundColor3 = Color3.new(1, 1, 0)
+pivotDot.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
 Instance.new("UICorner", pivotDot).CornerRadius = UDim.new(1, 0)
 
 local cam = workspace.CurrentCamera
@@ -291,18 +309,18 @@ local function updateUI()
 		previewLabel.Text = string.format("%s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d",
 			statusText, heightOffset, pivotOffset, depthOffset, distance, currentFrame, ROTATIONS)
 		previewSubLabel.Text = "P: stop preview | Space: pause/resume"
-		botLabel.Visible = false
+		botPanel.Visible = false
 	else
 		local side = "Front"
 		if rootPart then
 			side = math.abs(startingAngleOffset - getFrontAngle()) < 0.01 and "Front" or "Back"
 		end
-		local animPos  = animationTrack and string.format(" | Anim: %.2fs", animationTrack.TimePosition) or ""
+		local animPos = animationTrack and string.format(" | Anim: %.2fs", animationTrack.TimePosition) or ""
 		label.Text = string.format("Start: %s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f%s | Frame %d/%d",
 			side, heightOffset, pivotOffset, depthOffset, distance, animPos, currentFrame, ROTATIONS)
 		subLabel.Text = "W: flip | E/D: height | A/S: pivot | Z/X: depth | R/F: zoom | N/M: anim time | O: pivot | P: preview | K/L: rotate | 1: corpse"
 		botLabel.Text = "Q: capture all frames | C: capture one frame"
-		botLabel.Visible = true
+		botPanel.Visible = true
 	end
 end
 
@@ -323,7 +341,6 @@ local function stopPreview()
 	previewSubLabel.Visible = false
 	label.Visible = true
 	subLabel.Visible = true
-	botLabel.Visible = true
 	previewing = false
 	paused = false
 	if previewConnection then
@@ -337,7 +354,6 @@ end
 local function startPreview()
 	label.Visible = false
 	subLabel.Visible = false
-	botLabel.Visible = false
 	previewLabel.Visible = true
 	previewSubLabel.Visible = true
 	previewing = true
@@ -357,11 +373,8 @@ local function captureNext(oneShot)
 	if capturing or currentFrame > ROTATIONS then return end
 	capturing = true
 
-	label.Visible = false
-	subLabel.Visible = false
-	botLabel.Visible = false
-	previewLabel.Visible = false
-	previewSubLabel.Visible = false
+	topPanel.Visible = false
+	botPanel.Visible = false
 	pivotBillboard.Enabled = false
 	UIS.MouseIconEnabled = false
 	RunService.RenderStepped:Wait()
@@ -385,16 +398,13 @@ local function captureNext(oneShot)
 			else
 				UIS.MouseIconEnabled = true
 				local text = oneShot and "Heeho! Single frame captured!" or "Heeho! All frames captured!"
+				topPanel.Visible = true
 				if previewing then
-					previewLabel.Visible = true
-					previewSubLabel.Visible = true
 					previewLabel.Text = text
-					previewSubLabel.Text = ""
+					previewSubLabel.Visible = false
 				else
-					label.Visible = true
-					subLabel.Visible = true
 					label.Text = text
-					subLabel.Text = ""
+					subLabel.Visible = false
 				end
 				pivotBillboard.Enabled = showPivot
 				print(text)
@@ -448,32 +458,32 @@ local keyActions = {
 	[Enum.KeyCode.K] = function() startingAngleOffset -= math.pi * 2 / ROTATIONS end,
 	[Enum.KeyCode.L] = function() startingAngleOffset += math.pi * 2 / ROTATIONS end,
 	[Enum.KeyCode.One] = function()
-	    isCorpse = not isCorpse
-	    if isCorpse then
-	        table.clear(originalProps)
-	        for _, desc in ipairs(model:GetDescendants()) do
-	            if desc:IsA("BasePart") then
-	                originalProps[desc] = { Color = desc.Color, Material = desc.Material, TextureID = desc:IsA("MeshPart") and desc.TextureID or nil }
-	                desc.Color = Color3.fromRGB(40, 54, 64)
-	                desc.Material = Enum.Material.Basalt
-	                if desc:IsA("MeshPart") then desc.TextureID = "" end
-	            elseif desc:IsA("Decal") or desc:IsA("Texture") or desc:IsA("SurfaceAppearance") or desc:IsA("Clothing") then
-	                originalProps[desc] = desc.Parent
-	                desc.Parent = nil
-	            end
-	        end
-	    else
-	        for obj, data in pairs(originalProps) do
-	            if typeof(data) == "table" then
-	                obj.Color = data.Color
-	                obj.Material = data.Material
-	                if data.TextureID then obj.TextureID = data.TextureID end
-	            else
-	                obj.Parent = data
-	            end
-	        end
-	        table.clear(originalProps)
-	    end
+		isCorpse = not isCorpse
+		if isCorpse then
+			table.clear(originalProps)
+			for _, desc in ipairs(model:GetDescendants()) do
+				if desc:IsA("BasePart") then
+					originalProps[desc] = { Color = desc.Color, Material = desc.Material, TextureID = desc:IsA("MeshPart") and desc.TextureID or nil }
+					desc.Color = Color3.fromRGB(40, 54, 64)
+					desc.Material = Enum.Material.Basalt
+					if desc:IsA("MeshPart") then desc.TextureID = "" end
+				elseif desc:IsA("Decal") or desc:IsA("Texture") or desc:IsA("SurfaceAppearance") or desc:IsA("Clothing") then
+					originalProps[desc] = desc.Parent
+					desc.Parent = nil
+				end
+			end
+		else
+			for obj, data in pairs(originalProps) do
+				if typeof(data) == "table" then
+					obj.Color = data.Color
+					obj.Material = data.Material
+					if data.TextureID then obj.TextureID = data.TextureID end
+				else
+					obj.Parent = data
+				end
+			end
+			table.clear(originalProps)
+		end
 	end,
 	[Enum.KeyCode.Q] = function() captureNext() end,
 	[Enum.KeyCode.C] = function() captureNext(true) end,
