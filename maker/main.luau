@@ -494,7 +494,7 @@ local keyActions = {
 }
 
 UIS.InputBegan:Connect(function(input, processed)
-	if processed then return end
+	if processed or capturing then return end
 	if previewing and input.KeyCode ~= Enum.KeyCode.P and input.KeyCode ~= Enum.KeyCode.Space then return end
 	local action = keyActions[input.KeyCode]
 	if action then
