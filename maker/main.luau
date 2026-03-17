@@ -372,7 +372,7 @@ local function startPreview()
 end
 
 local function captureNext(oneShot)
-	if capturing or currentFrame > ROTATIONS then return end
+	if capturing then return end
 	capturing = true
 
 	topPanel.Visible = false
@@ -413,6 +413,12 @@ local function captureNext(oneShot)
 				pivotBillboard.Enabled = showPivot
 				print(text)
 				capturing = false
+
+				task.delay(1, function()
+					label.Visible = true
+					subLabel.Visible = true
+					updateUI()
+				end)
 			end
 		end)
 	end)
