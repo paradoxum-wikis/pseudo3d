@@ -97,8 +97,16 @@ jobs:
 
       - name: Generate RBXLX from Luau
         run: |
+          BUILD_VERSION="build-${{ github.run_number }}"
           LUAU_CONTENT=$(cat maker/main.luau)
-          awk -v r="$LUAU_CONTENT" '{gsub(/\$\(cat main\.luau\)/, r)}1' maker/template.xml > outtahere.rbxlx
+
+          awk -v r="$LUAU_CONTENT" -v v="$BUILD_VERSION" '
+          {
+            gsub(/\$\(buildver\)/, v)
+            gsub(/\$\(cat main\.luau\)/, r)
+            print
+          }
+          ' maker/template.xml > outtahere.rbxlx
 
       - name: Convert RBXLX to RBXL
         uses: t7ru/rbx-convert-action@v0.2.0
