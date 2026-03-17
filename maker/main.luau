@@ -29,6 +29,7 @@ local PREVIEW_FPS     = 10							-- frames per second during preview rotation
 local TARGET_NAME     = "Target"					-- name of the model to capture
 local ANIM_NAME       = "Animation"					-- name of the animation to play (also prefix for variants)
 local TARGET_EFFECTS  = false						-- show anything that emits from the model
+local HIDE_CURSOR	  = false						-- hide the mouse cursor during capture
 
 local player = Players.LocalPlayer
 for _, gui in ipairs(player.PlayerGui:GetChildren()) do
@@ -378,7 +379,7 @@ local function captureNext(oneShot)
 	botPanel.Visible = false
 	animList.Visible = false
 	pivotBillboard.Enabled = false
-	UIS.MouseIconEnabled = false
+	if HIDE_CURSOR then UIS.MouseIconEnabled = false end
 	RunService.RenderStepped:Wait()
 
 	CaptureService:TakeScreenshotCaptureAsync(function(result, screenshotCapture)
@@ -398,7 +399,7 @@ local function captureNext(oneShot)
 				capturing = false
 				captureNext()
 			else
-				UIS.MouseIconEnabled = true
+				if HIDE_CURSOR then UIS.MouseIconEnabled = true end
 				local text = oneShot and "Heeho! Single frame captured!" or "Heeho! All frames captured!"
 				topPanel.Visible = true
 				animList.Visible = #animSequences >= 2
