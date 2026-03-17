@@ -304,6 +304,7 @@ local function getLookAt()
 end
 
 local function updateUI()
+	if capturing then return end
 	if previewing then
 		local statusText = paused and "[PAUSED]" or "[PREVIEWING]"
 		previewLabel.Text = string.format("%s | Height: %+.1f | Pivot: %+.1f | Depth: %+.1f | Zoom: %.1f | Frame %d/%d",
@@ -375,6 +376,7 @@ local function captureNext(oneShot)
 
 	topPanel.Visible = false
 	botPanel.Visible = false
+	animList.Visible = false
 	pivotBillboard.Enabled = false
 	UIS.MouseIconEnabled = false
 	RunService.RenderStepped:Wait()
@@ -399,6 +401,7 @@ local function captureNext(oneShot)
 				UIS.MouseIconEnabled = true
 				local text = oneShot and "Heeho! Single frame captured!" or "Heeho! All frames captured!"
 				topPanel.Visible = true
+				animList.Visible = #animSequences >= 2
 				if previewing then
 					previewLabel.Text = text
 					previewSubLabel.Visible = false
