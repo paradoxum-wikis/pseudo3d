@@ -321,6 +321,10 @@ gcLgc4RKxr21zq2UlJSM]]></BinaryString>
 				><![CDATA[-- Anything inside Maker will be deleted on auto updates!
 -- If possible, do NOT store and save anything important here!
 
+-- As of 26 April 2026, Roblox introduced "Respect Studio Shortcuts when game has focus"
+-- This settings effectively break a few keybinds Pseudo3D use, such as I, O, or F
+-- You can disable this by finding that option in File -> Studio Settings -> Studio
+
 -- Pseudo3D $(buildver)]]></ProtectedString>
 				<string name="ScriptGuid">{F3CD0435-59A1-4D46-A041-F762978A88C6}</string>
 				<BinaryString name="AttributesSerialize" />
