@@ -428,8 +428,9 @@ setFrame(1)
 
 local keyActions = {
 	[Enum.KeyCode.W] = function()
-		local base = getFrontAngle()
-		startingAngleOffset = math.abs(startingAngleOffset - base) < 0.01 and base + math.pi or base
+		local pivot = model:GetPivot()
+		model:PivotTo(pivot * CFrame.fromEulerAnglesYXZ(0, math.pi, 0))
+		startingAngleOffset = getFrontAngle()
 	end,
 	[Enum.KeyCode.E] = function() heightOffset = math.min(heightOffset + HEIGHT_STEP, HEIGHT_MAX) end,
 	[Enum.KeyCode.D] = function() heightOffset = math.max(heightOffset - HEIGHT_STEP, HEIGHT_MIN) end,
