@@ -60,7 +60,7 @@ jobs:
           path: bin/*
 
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [build-linux, build-windows, build-macos]
     permissions:
       contents: write
