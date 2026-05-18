@@ -1,6 +1,6 @@
 /**
  * Name:		pseudo3d-viewer
- * Version:		v1.4
+ * Version:		v1.5
  * Author:		t7ru [[User:Gabonnie]]
  * Description:	Allow pseudo3d's spritesheets to be panned.
  */
@@ -26,9 +26,12 @@
 		const startX = touch ? e.touches[0].pageX : e.pageX;
 		const startFrame = viewport._currentFrame || 0;
 		const frameAmount = viewport._frameAmount || 24;
-		const piItem = window.PseudoSkybox ? viewport.closest(".pi-item") : null;
-		const currentBgX =
-			parseFloat(piItem && piItem.style.backgroundPositionX) || 50;
+		const piItem = window.PseudoSkybox
+			? viewport.closest(".pi-item")
+			: null;
+		const currentBgX = parseFloat(
+			(piItem && piItem.style.backgroundPositionX) || 50,
+		);
 
 		const move = (ev) => {
 			const x = touch ? ev.touches[0].pageX : ev.pageX;
@@ -44,14 +47,20 @@
 			if (piItem) {
 				const newBgX = Math.min(
 					100,
-					Math.max(0, currentBgX - delta * (window.PseudoSkyboxSpeed || 0.01)),
+					Math.max(
+						0,
+						currentBgX - delta * (window.PseudoSkyboxSpeed || 0.01),
+					),
 				);
 				piItem.style.backgroundPositionX = `${newBgX}%`;
 			}
 		};
 
 		const up = () => {
-			document.removeEventListener(touch ? "touchmove" : "mousemove", move);
+			document.removeEventListener(
+				touch ? "touchmove" : "mousemove",
+				move,
+			);
 			document.removeEventListener(touch ? "touchend" : "mouseup", up);
 		};
 
