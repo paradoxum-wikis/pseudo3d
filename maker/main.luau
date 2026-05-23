@@ -179,8 +179,8 @@ if #animSequences > 0 then
 end
 
 local animRowLabels = {}
-local FONT_BOLD = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold)
-local FONT_REG  = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Regular)
+local FONT_BOLD  = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold)
+local FONT_REG   = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Regular)
 animList.Visible = #animSequences >= 2
 for i, seq in ipairs(animSequences) do
 	local row = Instance.new("TextLabel", animList)
@@ -189,9 +189,9 @@ for i, seq in ipairs(animSequences) do
 	row.TextSize = 13
 	row.TextXAlignment = Enum.TextXAlignment.Left
 	row.LayoutOrder = i
-	row.TextColor3 = i == 1 and Color3.fromRGB(80, 255, 180) or Color3.fromRGB(200, 200, 200)
-	row.FontFace   = i == 1 and FONT_BOLD or FONT_REG
-	row.Text       = i == 1 and "> " .. seq.Name or "  " .. seq.Name
+	row.TextColor3  = i == 1 and Color3.fromRGB(80, 255, 180) or Color3.fromRGB(200, 200, 200)
+	row.FontFace    = i == 1 and FONT_BOLD or FONT_REG
+	row.Text        = i == 1 and "> " .. seq.Name or "  " .. seq.Name
 	animRowLabels[i] = row
 end
 
@@ -285,18 +285,18 @@ local cam = workspace.CurrentCamera
 cam.CameraType = Enum.CameraType.Scriptable
 cam.FieldOfView = fov
 
-local currentFrame		= 1
-local heightOffset		= 0
-local distance			= DISTANCE
-local pivotOffset		= 0
-local depthOffset		= 0
-local showPivot			= false
-local previewing		= false
-local previewConnection	= nil
-local capturing			= false
+local currentFrame      = 1
+local heightOffset      = 0
+local distance          = DISTANCE
+local pivotOffset       = 0
+local depthOffset       = 0
+local showPivot         = false
+local previewing        = false
+local previewConnection = nil
+local capturing         = false
 local paused            = false
 local isCorpse          = false
-local originalProps		= {}
+local originalProps     = {}
 
 local function getLookAt()
 	local right   = Vector3.new(math.cos(startingAngleOffset), 0, -math.sin(startingAngleOffset))
