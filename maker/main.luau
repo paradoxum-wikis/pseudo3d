@@ -30,6 +30,7 @@ local TARGET_NAME     = "Target"					-- name of the model to capture
 local ANIM_NAME       = "Animation"					-- name of the animation to play (also prefix for variants)
 local TARGET_EFFECTS  = false						-- show anything that emits from the model
 local HIDE_CURSOR	  = false						-- hide the mouse cursor during capture
+local AUTO_ROTATE     = true						-- auto rotate the model to face the sun
 
 local player = Players.LocalPlayer
 for _, gui in ipairs(player.PlayerGui:GetChildren()) do
@@ -130,10 +131,11 @@ local function getFrontAngle()
 	return math.atan2(rootPart.CFrame.LookVector.X, rootPart.CFrame.LookVector.Z)
 end
 
-local pivot = model:GetPivot()
-model:PivotTo(CFrame.new(pivot.Position) * CFrame.fromEulerAnglesYXZ(0, -getFrontAngle(), 0))
-
 local startingAngleOffset = getFrontAngle()
+if AUTO_ROTATE then
+	local pivot = model:GetPivot()
+	model:PivotTo(CFrame.new(pivot.Position) * CFrame.fromEulerAnglesYXZ(0, -startingAngleOffset, 0))
+end
 
 for _, part in ipairs(model:GetDescendants()) do
 	if part:IsA("BasePart") and part ~= rootPart then
