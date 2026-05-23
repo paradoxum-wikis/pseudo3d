@@ -325,6 +325,7 @@ gcLgc4RKxr21zq2UlJSM]]></BinaryString>
 -- This settings effectively break a few keybinds Pseudo3D use, such as I, O, or F
 -- You can disable this by finding that option in File -> Studio Settings -> Studio
 
+-- Configurations for Pseudo3D Maker can be found in StarterPlayer > StarterCharacterScripts
 -- Pseudo3D $(buildver)]]></ProtectedString>
 				<string name="ScriptGuid">{F3CD0435-59A1-4D46-A041-F762978A88C6}</string>
 				<BinaryString name="AttributesSerialize" />
