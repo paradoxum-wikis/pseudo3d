@@ -95,6 +95,11 @@ jobs:
                   cp README.md release-macos-amd64/
                   cp README.md release-macos-arm64/
 
+                  cp LICENSE release-linux/
+                  cp LICENSE release-windows/
+                  cp LICENSE release-macos-amd64/
+                  cp LICENSE release-macos-arm64/
+
             - name: Generate RBXLX from Luau
               run: |
                   BUILD_VERSION="build-${{ github.run_number }}"
