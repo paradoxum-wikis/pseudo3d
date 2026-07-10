@@ -1,12 +1,16 @@
+> [!NOTE]
+> Paradoxum Wikis editors should use [pseudoxd](https://github.com/paradoxum-wikis/pseudoxd) instead. Pseudo3D has been deprecated in favor of pseudoxd.
+
 # The Manual
 
 In order to use this toolset, look at the ["Releases"](https://github.com/paradoxum-wikis/pseudo3d/releases) tab and download the latest build, then extract the archive to a location of your choice.
 
 The archives available for downloads are:
- - **pseudo3d-windows-amd64.zip**: Windows 64-bit
- - **pseudo3d-linux-amd64.tar.gz**: Linux 64-bit
- - **pseudo3d-macos-amd64.zip**: macOS 64-bit
- - **pseudo3d-macos-arm64.zip**: macOS Apple Silicon
+
+- **pseudo3d-windows-amd64.zip**: Windows 64-bit
+- **pseudo3d-linux-amd64.tar.gz**: Linux 64-bit
+- **pseudo3d-macos-amd64.zip**: macOS 64-bit
+- **pseudo3d-macos-arm64.zip**: macOS Apple Silicon
 
 ## Setting Up the Toolset
 
@@ -21,6 +25,7 @@ Now that you've set up the toolset, you can start using it. I will not go over h
 2. Next, get the animation **keyframe** (`KeyframeSequence`), and move it inside the root level of the model. Rename the keyframe to "Animation".
 
 Your model should now look something like this:
+
 ```
 Workspace
 	└─Target (Model)
@@ -35,11 +40,12 @@ There are also more configurations you can change inside your "pseudo3d-maker" `
 Press Q and you can start the capturing process. Note that your cursor **will be hidden**, so you will have to estimate where your cursor is when you want to click "Save."
 
 **All of your images will be saved in a folder called "tmp-capture-storage."** You can find this folder by:
+
 - On Windows: Windows + R > `%localappdata%\Roblox\tmp-capture-storage` > Enter
 - On macOS: Finder > Command + Shift + G > `~/Library/Roblox/tmp-capture-storage` > Enter
 - On Linux (Vinegar):
-	- Flatpak: `cd ~/.var/app/org.vinegarhq.Vinegar/data/vinegar/appdata/Roblox/tmp-capture-storage`
-	- Native: `cd ~/.local/share/vinegar/appdata/Roblox/tmp-capture-storage`
+    - Flatpak: `cd ~/.var/app/org.vinegarhq.Vinegar/data/vinegar/appdata/Roblox/tmp-capture-storage`
+    - Native: `cd ~/.local/share/vinegar/appdata/Roblox/tmp-capture-storage`
 
 The toolset features an auto-import function that can automatically copy the latest captures (24 images) from your capture directory into the "process" folder and will **safely archive** any existing files into "archive." Alternatively, you can move them manually to the "process" folder inside your toolset directory.
 
@@ -79,23 +85,24 @@ pseudo3d-sprites.exe -size 256 -threshold-bg 80
 
 Here is a full list of available flags:
 
-| Flag | Default | Description |
-|---|---|---|
-| `-skip-ui` | `false` | Skip the UI and run batch processing directly using the saved safe zone. |
-| `-size` | `512` | Output size of each square frame in pixels; e.g., `300` for 300×300. |
-| `-threshold-bg` | `7000.0` | Tolerance for background removal; higher values are more aggressive. It is also used as the maximum value for range mode. |
-| `-skip-bg` | `false` | Skip chroma key background removal entirely. |
-| `-mode-bg` | `range` | Background removal mode; `range` uses a threshold range, `max` uses a single threshold value. |
-| `-threshold-bg-min` | `0.0` | Minimum threshold value for range mode. |
-| `-in` | `./process` | Input directory containing your PNG frames. |
-| `-out` | `spritesheet.png` | Output filename for the final spritesheet. |
-| `-out-one` | `oneshot.png` | Output filename for single frame exports. |
-| `-erode` | `false` | Trim 1 pixel of alpha from edges to remove chroma key residue. |
-| `-color-bg` | `DF03DF` | Hex color to remove as the background; should match `BACKDROP_COLOR` in your "pseudo3d-maker" `LocalScript`. |
-| `-skip-autocrop` | `false` | Skip tight autocropping of frames and spritesheets. |
-| `-skip-prescale` | `false` | Skip prescale preview images at the cost of slower UI performance; the original files are still used for processing. |
+| Flag                | Default           | Description                                                                                                               |
+| ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `-skip-ui`          | `false`           | Skip the UI and run batch processing directly using the saved safe zone.                                                  |
+| `-size`             | `512`             | Output size of each square frame in pixels; e.g., `300` for 300×300.                                                      |
+| `-threshold-bg`     | `7000.0`          | Tolerance for background removal; higher values are more aggressive. It is also used as the maximum value for range mode. |
+| `-skip-bg`          | `false`           | Skip chroma key background removal entirely.                                                                              |
+| `-mode-bg`          | `range`           | Background removal mode; `range` uses a threshold range, `max` uses a single threshold value.                             |
+| `-threshold-bg-min` | `0.0`             | Minimum threshold value for range mode.                                                                                   |
+| `-in`               | `./process`       | Input directory containing your PNG frames.                                                                               |
+| `-out`              | `spritesheet.png` | Output filename for the final spritesheet.                                                                                |
+| `-out-one`          | `oneshot.png`     | Output filename for single frame exports.                                                                                 |
+| `-erode`            | `false`           | Trim 1 pixel of alpha from edges to remove chroma key residue.                                                            |
+| `-color-bg`         | `DF03DF`          | Hex color to remove as the background; should match `BACKDROP_COLOR` in your "pseudo3d-maker" `LocalScript`.              |
+| `-skip-autocrop`    | `false`           | Skip tight autocropping of frames and spritesheets.                                                                       |
+| `-skip-prescale`    | `false`           | Skip prescale preview images at the cost of slower UI performance; the original files are still used for processing.      |
 
-*You can also access the above list by running the executable with the `-help` (`-h`) flag.*
+_You can also access the above list by running the executable with the `-help` (`-h`) flag._
 
-## Terms of Use
-This toolset (with the exception of [Viewer](./viewer)) is source-available to invited members and is **NOT** open-source. You may not redistribute the source code or its binaries without explicit permission from the author. For more information, please contact t7ru directly.
+## License
+
+[MIT](./LICENSE)
